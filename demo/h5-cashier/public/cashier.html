@@ -111,7 +111,7 @@ function render() {
     tip.className = 'muted center';
     tip.textContent = channel === 'alipay'
       ? '请使用支付宝扫一扫完成付款'
-      : '请使用微信扫码，在手机上完成支付';
+      : '请使用微信扫码，在微信中完成支付';
     host.append(tip);
     return;
   }
@@ -129,8 +129,9 @@ function render() {
       }
       host.append(list);
     } else {
-      host.append(note('当前处于应用内置浏览器，可复制链接后在系统浏览器中打开支付'));
-      host.append(button('复制支付链接', () => copy(payUrl)));
+      // 真实收银页该分支**只给引导**（无复制入口、无切换面）——demo 与之一致，
+      // 不额外展示真实页面没有的能力。
+      host.append(note('当前处于应用内置浏览器，请在系统浏览器中打开本页面完成支付'));
     }
     return;
   }

@@ -11,9 +11,9 @@ Base URL 由平台下发（文档里写 `<BASE_URL>`），**不要硬编码 host
 | 端点 | 用途 | 成功 | 关键语义 |
 | --- | --- | --- | --- |
 | `POST /payments` | 建单 | `201` / `200`（幂等重放） | 同号同摘要重放；异摘要 `409`；下发 `payUrl` + 支付宝单的 `qrCode` |
-| `POST /payments/{outTradeNo}/attempts` | 重拉起 | `201` / `200`（并发赢家） | **关旧建新**，新材料同批更换；需要新码只走这里 |
+| `POST /payments/{outTradeNo}/attempts` | 重拉起 | `201` / `200`（并发赢家） | **关旧建新**，新材料同批更换；需要新码只走这里。无请求体字段，但**必须带 `Content-Type: application/json`** |
 | `GET /payments/{outTradeNo}` | 查单 | `200` | **本地权威读**；`payUrl` 与 `qrCode` **恒为 null** |
-| `POST /payments/{outTradeNo}/close` | 关单 | `200` | 先与支付机构确认未支付才关；已支付 → `409`；不确定 → `closeState=UNKNOWN_KEPT` |
+| `POST /payments/{outTradeNo}/close` | 关单 | `200` | 先与支付机构确认未支付才关；已支付 → `409`；不确定 → `closeState=UNKNOWN_KEPT`。无请求体字段，但**必须带 `Content-Type: application/json`** |
 | `POST /refunds` | 退款 | `201` / `200`（幂等重放） | 仅已支付订单；累计退款 ≤ 实付；被拒 `502`；不确定 `UNKNOWN` |
 | `GET /refunds/{outRefundNo}` | 退款查询 | `200` | 只读本地权威状态 |
 
@@ -27,7 +27,9 @@ Base URL 由平台下发（文档里写 `<BASE_URL>`），**不要硬编码 host
 | 业务级 | `outTradeNo` / `outRefundNo` | 同号同内容 → `200` + `replayed=true`；异内容 → `409` |
 | 状态机 | 订单/退款状态 | 非法迁移 `409` |
 
-**实现要点**：网络超时/5xx 重试时**复用同一个 `requestId` 与同一份请求体**；`409` 的处置是**先查单**，不是换号重下单。
+**实现要点**：网络超时/5xx 重试时**复用同一个 `requestId` 与同一份请求体**，但 **nonce 必须换新**（同一个 nonce 在 10 分钟内复用会拿到 `409 OPEN_API_REPLAY`，永远走不到幂等重放）；`409` 的处置是**先查单**，不是换号重下单。
+
+**请求头**：六头成组；所有 `POST` 都要带 `Content-Type: application/json`（允许 charset 参数），`GET` 可省；各头长度/字符集是硬约束，见 `docs/03-api-reference.md` §1。
 
 ## 3. 状态与终态
 

@@ -161,10 +161,10 @@ async function main() {
     // 否则「矩阵已实现」只是文档里的一句话。判据词取自各分支实际渲染的文案。
     for (const [name, needle] of [
       ['/cashier/preview?terminal=pc&channel=alipay', '请使用支付宝扫一扫完成付款'],
-      ['/cashier/preview?terminal=pc&channel=wechat', '请使用微信扫码，在手机上完成支付'],
+      ['/cashier/preview?terminal=pc&channel=wechat', '请使用微信扫码，在微信中完成支付'],
       ['/cashier/preview?terminal=wechat-out&channel=alipay', '打开支付宝'],
       ['/cashier/preview?terminal=wechat-out&channel=wechat', '复制链接并打开微信'],
-      ['/cashier/preview?terminal=wechat-in&channel=alipay', '复制支付链接'],
+      ['/cashier/preview?terminal=wechat-in&channel=alipay', '请在系统浏览器中打开本页面完成支付'],
       ['/cashier/preview?terminal=wechat-in&channel=wechat', '正在调起支付面板'],
     ]) {
       const page = await http(port, 'GET', name);

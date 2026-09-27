@@ -47,7 +47,10 @@ XD-Response-v1
 {SHA256_HEX(rawBody)}
 ```
 
-平台公钥只从**固定文档页/门户**获取，不从响应体里取；文档页见 `docs/02-integration-guide.md` §3.1（含 `kid`、指纹与 PEM，与门户同源）。
+- `CONTENT_TYPE` 与请求侧**同一套归一化**：**小写、去 `;` 参数**（响应头通常是 `application/json; charset=utf-8`，参与签名的是 `application/json`）——这一条写错会让**每个**响应都验不过。
+- `STATUS` 为十进制状态码字符串；`SHA256_HEX(rawBody)` 取**实际交付字节**。
+- **不是每个响应都带这四个头**：鉴权链之前的拒绝（来源 IP 403、请求体门卫 400/413、六头形态 400、验签失败 401、nonce 重放 409）**不带**。正确做法：**四头齐备才强制验签**；缺头按未签名响应处理并保留其 `code`/`requestId`，别当篡改丢弃。
+- 平台公钥只从**固定文档页/门户**获取，不从响应体里取；文档页见 `docs/02-integration-guide.md` §3.1（含 `kid`、指纹与 PEM 正文，与门户同源）。
 
 ## 3. 事件签名 `XD-Webhook-v1`（平台 → 商家回调）
 

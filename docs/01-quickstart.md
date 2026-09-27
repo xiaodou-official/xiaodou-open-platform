@@ -11,7 +11,7 @@
 | `appId` | 应用标识，开通后在门户「应用凭证」页可见 |
 | `keyId`（`kid`） | 签名密钥标识，与你的 RSA2 公钥成对 |
 | RSA2 私钥 | **只在你自己的服务器上生成与保存**，私钥永不上传、永不进浏览器 |
-| Base URL | 平台在开通时提供。文档与示例中一律写作 `<BASE_URL>`，不要从本资料里抄任何 host |
+| Base URL | 登录**卖家门户** →「应用凭证」页的**接入地址**（平台在此下发；本资料与示例一律写作 `<BASE_URL>`，**不要从资料里抄任何 host**，也不要写死在代码里——当配置项管理） |
 | 出口 IP | 你的服务器出口 IP 需在门户的 IP 白名单内（未加白名单的请求会被拒） |
 | 申报域名归属 | 申报的每个网站域名需先在门户完成归属验证（DNS TXT 或回源文件二选一）；做法见 [接入指南 · 域名归属验证](./02-integration-guide.md#2-域名归属验证申请开通前完成) |
 | 平台公钥 | 验平台响应/事件签名用；取自 [接入指南 · 平台公钥与指纹](./02-integration-guide.md#31-平台公钥与指纹公示)（与门户同源） |
@@ -78,11 +78,13 @@ X-XD-Sign: <Base64 签名值>
   "feeProjection": {
     "ruleVersion": "<生效配置版本>",
     "tier": "STANDARD",
+    "thresholdFen": 0,
     "merchantRateBps": 0,
     "companyServiceFeeRateBps": 0,
     "merchantSettlementFen": 0,
     "companyServiceFeeFen": 0
-  }
+  },
+  "replayed": false
 }
 ```
 
@@ -110,7 +112,7 @@ X-XD-Sign: <Base64 签名值>
 
 **收银页打开、收银页回跳、用户点击完成都不是支付终态。** 终态只有两条来源：
 
-1. **事件通知**（推荐）：在你的应用里配置 `notifyUrl`，平台会把 `PAYMENT_SUCCEEDED` 等事件推给你的服务器，用平台公钥验签后按 `eventId` 去重落账 —— 见 [webhook 验签](./05-webhook-verification.md)。
+1. **事件通知**（推荐）：在门户「应用配置变更」里配置 `notifyUrl`（需审核通过后生效，前置条件见 [webhook 验签](./05-webhook-verification.md)），平台会把 `PAYMENT_SUCCEEDED` 等事件推给你的服务器，用平台公钥验签后按 `eventId` 去重落账。
 2. **主动查单**：`GET <BASE_URL>/api/open/v1/payments/{outTradeNo}`（本地权威读，零外部外呼）。
 
 两条路径都要接：事件是主路径，查单是对账与补偿路径。
@@ -122,7 +124,7 @@ X-XD-Sign: <Base64 签名值>
 
 ## 6. 本地先跑一遍
 
-`demo/h5-cashier/` 是一个**零外部依赖**的本地 demo（loopback + mock），把下单、收银页三端形态、轮询、事件验签、查单、退款整条链跑通，不需要任何生产凭证：
+`demo/h5-cashier/` 是一个**零外部依赖**的本地 demo（loopback + mock），把下单、收银页三端形态、事件验签、查单、关单、退款整条链跑通，不需要任何生产凭证：
 
 ```bash
 node demo/h5-cashier/server.js
@@ -133,7 +135,7 @@ node demo/h5-cashier/server.js
 
 | 现象 | 先看 |
 | --- | --- |
-| `401` 验签失败 | 规范串与六头形态：是不是把 query 排序、原始 body 字节、`Content-Type` 规范化写错了 |
+| `401` 验签失败 | 规范串与六头形态：是不是把 query 排序、原始 body 字节、`Content-Type` 规范化写错了；也可能是不在 ±300 秒时间窗内，或应用不在 ACTIVE 状态 |
 | `403` 来源 IP 判定失败 | 出口 IP 是否在白名单内；请求是否绕过了你配置的代理 |
 | `400` 请求体非法 | 是否存在 schema 之外的字段（请求体是**严格模式**，未知字段直接拒） |
 | `413` 请求体过大 | 请求体有流式硬上限，超大 `attach`/`description` 会被拒 |

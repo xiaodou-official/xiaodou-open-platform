@@ -20,11 +20,11 @@ POST <BASE_URL>/api/open/v1/refunds
 | 金额 | 累计退款不得超过实付金额；**失败的退款不占额度** |
 | 幂等 | 同 `outRefundNo` 同内容 → `200` 幂等重放；同号异内容 → `409` |
 | 受理后被拒 | `502`（支付机构拒绝，平台不向外暴露内部原因） |
-| 结果不确定 | 状态 `UNKNOWN`，**不判死**，等事件或退查收敛 |
+| 结果不确定 | 状态 `UNKNOWN`，**不判死**，等事件收敛（见 §2） |
 
 退款状态：`REQUESTED` → `PENDING` → `SUCCEEDED` / `FAILED`（另有 `UNKNOWN`）。
 
-> **一个容易踩的 `409`**：退款按**下单时冻结的收款分配快照**原路回吐，因此前提是该单**有可用的快照**。缺少快照（历史单或异常单）时，创建退款返回 `409` `OPEN_API_STATE_INVALID`——这表示该单**不能自助退款**，请带 `outTradeNo` 与 `requestId` 走门户反馈渠道人工处置，**不要换号重试**。
+> **一个容易踩的 `409`**：退款按**下单时冻结的收款分配快照**原路回吐，因此前提是该单**有可用的快照**。缺少快照（历史单或异常单）时，创建退款返回 `409` `OPEN_API_STATE_INVALID`——这表示该单**不能自助退款**，请带 `outTradeNo` 与 `requestId` 走官网反馈渠道人工处置，**不要换号重试**。
 
 **请只用查询退款接口和自己库里记录的 `outRefundNo` 判退款最终结果**——不要用「发起退款后等待固定时长」这种猜测式判断。
 
@@ -34,12 +34,14 @@ POST <BASE_URL>/api/open/v1/refunds
 
 ```text
 退款 UNKNOWN
- ├─ 调 GET /refunds/{outRefundNo} 复查
- ├─ 等 REFUND_SUCCEEDED / REFUND_FAILED 事件
- └─ 长时间仍 UNKNOWN → 把该笔挂到「待核」队列，人工/平台侧介入
+ ├─ 等 REFUND_SUCCEEDED / REFUND_FAILED 事件（唯一自动收敛路径）
+ ├─ 调 GET /refunds/{outRefundNo} 看当前状态（本地权威读：不会触发外呼、也不会改变状态）
+ └─ 长时间仍 UNKNOWN → 把该笔挂到「待核」队列，带 outRefundNo + requestId 走官网反馈人工介入
       ❌ 不要用新的 outRefundNo 再退一次（可能造成重复退款）
       ❌ 不要把 UNKNOWN 当失败直接回滚交付（可能钱已退）
 ```
+
+> **别指望「反复查单」把状态查出来**：查询接口是**平台本地账本的只读投影**，它不会去问支付机构——`UNKNOWN` 的收敛只发生在支付机构回通知时。人工兜底是最终手段。
 
 订单侧同理：订单 `UNKNOWN` 时不要重新下单、不要判失败。
 
@@ -62,7 +64,7 @@ POST <BASE_URL>/api/open/v1/refunds
 ## 4. 结算读回
 
 - 逐笔结算状态看门户「资金/结算」视图；**到账周期与口径以门户生效配置为准**（见 [费率与限额](./07-fees-and-limits.md)）。
-- 对账发现「平台已结算、你未入账」时：先看该笔订单的渠道与结算状态，再带着 `outTradeNo` + `requestId` 走门户反馈渠道。
+- 对账发现「平台已结算、你未入账」时：先看该笔订单的渠道与结算状态，再带着 `outTradeNo` + `requestId` 走官网反馈渠道。
 
 ## 5. 退款常见误区
 
