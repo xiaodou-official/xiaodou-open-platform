@@ -17,8 +17,8 @@
     "public-repo",
     "portal-download"
   ],
-  "generatedAt": "2026-09-27T15:53:30.368Z",
-  "contentHash": "52197cb20638ee715950d51ca7dc52783610cba9363f5ed649ffbbd556e1126a",
+  "generatedAt": "2026-09-27T16:06:19.268Z",
+  "contentHash": "69a31e0418b081a6ef4b17e8b23365f435f7f7d7559d359d5398192b926b4fd8",
   "docs": [
     {
       "docId": "XD-OP-01",
@@ -86,7 +86,7 @@
     {
       "docId": "XD-OP-10",
       "path": "docs/10-changelog.md",
-      "sha256": "7e2e155611ba6b34760e72a605e74c0c310b44dc824a8037d69d9cd7e9b764fe",
+      "sha256": "ec9f5aa0c57afd9df63f22be0baa9bddfa8c89fe5574001baf414a9362bc32d6",
       "version": "1.0.0",
       "status": "PUBLISHED"
     },
@@ -113,7 +113,7 @@
   "releases": [
     {
       "version": "1.0.0",
-      "contentHash": "52197cb20638ee715950d51ca7dc52783610cba9363f5ed649ffbbd556e1126a",
+      "contentHash": "69a31e0418b081a6ef4b17e8b23365f435f7f7d7559d359d5398192b926b4fd8",
       "publishedAt": "2026-09-27T12:35:22Z",
       "impact": "新增支付宝官方收款码下发（qrCode）、收银页终端分端拉起、微信内免手点、手机微信外推荐路径",
       "migration": "无需迁移（只增不改）：qrCode 为可选新字段；收银页行为变化只影响买家侧体验，商家服务端无需改动",
@@ -132,9 +132,9 @@
           "path": "docs/10-changelog.md"
         },
         "publicRelease": {
-          "status": "PENDING",
+          "status": "DELIVERED",
           "path": "releases/v1.0.0.md",
-          "note": "资料已按线上行为修订（2026-09-27 文档修订），**待重新推送公开仓**后回填；在此之前公开仓上仍是修订前的内容"
+          "note": "公开仓 github.com/xiaodou-official/xiaodou-open-platform 与 Gitee 镜像 gitee.com/lu-wulei/xiaodou-open-platform（单树快照推送；tag v1.0.0 指向 v1.0.0 首发内容树，版本内资料修订随 main 滚动，本批=2026-09-27 两批资料修订）"
         }
       }
     }
@@ -156,7 +156,7 @@
         "docs/11-go-live-checklist.md",
         "docs/12-credential-key-management.md"
       ],
-      "contentHash": "f091595dc9aea7d7dec38161870f8bf63fca957f7b3e0f2a419de22f8b587dbb"
+      "contentHash": "5c32579b6eb16c1d77f1fc7fb619d320b5e2a18bfe501f3e2c67cf0ec5443c68"
     },
     "skill": {
       "files": [

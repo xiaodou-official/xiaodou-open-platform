@@ -115,9 +115,9 @@
       "note": null
     },
     "publicRelease": {
-      "status": "PENDING",
+      "status": "DELIVERED",
       "path": "releases/v1.0.0.md",
-      "note": "资料已按线上行为修订（2026-09-27 文档修订），**待重新推送公开仓**后回填；在此之前公开仓上仍是修订前的内容"
+      "note": "公开仓 github.com/xiaodou-official/xiaodou-open-platform 与 Gitee 镜像 gitee.com/lu-wulei/xiaodou-open-platform（单树快照推送；tag v1.0.0 指向 v1.0.0 首发内容树，版本内资料修订随 main 滚动，本批=2026-09-27 两批资料修订）"
     }
   }
 }
