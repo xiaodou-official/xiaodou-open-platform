@@ -1,0 +1,35 @@
+内容许可（Content License）
+================================
+
+本目录中除「示例代码」以外的内容——包括 `docs/` 下的文档、`skill/` 下的接入说明与
+`references/`、`releases/` 下的变更公告、本目录的 README 与图示文本——采用
+**Creative Commons Attribution 4.0 International（CC BY 4.0）** 许可。
+
+    许可全文（法律文本）：https://creativecommons.org/licenses/by/4.0/legalcode
+    人类可读摘要：        https://creativecommons.org/licenses/by/4.0/
+    中文摘要：            https://creativecommons.org/licenses/by/4.0/deed.zh
+
+署名主体（Licensor）
+--------------------
+
+    宇智人工智能（深圳）有限公司
+    统一社会信用代码：91440300MAETQ2HA61
+
+你可以自由地共享（以任何媒介或格式复制、发行本内容）与演绎（修改、转换、再创作），
+用于任何目的（包括商业目的），但须遵守 CC BY 4.0 的署名条件：
+
+1. **署名**：保留上述署名主体、许可名称与许可链接；
+2. **标明修改**：如作出修改，须注明已修改；
+3. **不得增加限制**：不得以法律条款或技术措施限制他人依本许可获得的权利用。
+
+示例代码
+--------
+
+`examples/`、`demo/`、`skill/examples/` 下的**代码**不适用本文件，另按
+[`LICENSE-CODE`](./LICENSE-CODE)（MIT）许可。
+
+免责
+----
+
+本目录是**接入资料，不是官方 SDK**；内容按「现状」提供，不构成任何形式的担保。
+接入与上线以平台在线合同、门户展示的生效配置与实际接口行为为准。

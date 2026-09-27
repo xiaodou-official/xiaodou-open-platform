@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>收银页（本地 mock）</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="wrap" style="max-width: 520px">
+  <div class="card center">
+    <div class="row row--between" style="justify-content: center">
+      <span class="badge">本地 mock 收银页</span>
+      <span class="badge badge--warning" id="status">待支付</span>
+    </div>
+
+    <p class="muted" style="margin-top: var(--space-4)">应付金额</p>
+    <h1 class="mono" id="amount">—</h1>
+    <p class="muted" id="subject">—</p>
+
+    <div id="branch" class="stack"></div>
+
+    <p class="muted" style="margin-top: var(--space-4)">
+      本页是 demo 的<b>收银页示意</b>：真实收银页由平台承载，终端分派行为与
+      <span class="mono">docs/06</span> 的终端能力矩阵一致。
+    </p>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const params = new URLSearchParams(location.search);
+const terminal = params.get('terminal') || 'pc';
+const channel = params.get('channel') || 'alipay';
+const token = location.pathname.split('/').pop();
+const payUrl = location.origin + '/cashier/' + token;
+const qrCode = 'https://qr.alipay.com/bax0demo0000000000000000';
+
+document.getElementById('amount').textContent = '¥ 1.00';
+document.getElementById('subject').textContent = '本地 demo 商品 · ' + (channel === 'alipay' ? '支付宝' : '微信支付');
+
+/** 生成一张「二维码示意图」：确定性图案 + 三个定位角。不可扫描，仅用于形态演示。 */
+function qrFigure(seed) {
+  const size = 21;
+  const wrap = document.createElement('div');
+  wrap.className = 'qr';
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('height', '100%');
+  svg.setAttribute('role', 'img');
+  svg.setAttribute('aria-label', '二维码示意图，不可扫描');
+  let hash = 2166136261;
+  for (const ch of seed) { hash ^= ch.charCodeAt(0); hash = Math.imul(hash, 16777619); }
+  const next = () => { hash ^= hash << 13; hash ^= hash >>> 17; hash ^= hash << 5; return Math.abs(hash) / 2 ** 31; };
+  const inFinder = (x, y) =>
+    (x < 8 && y < 8) || (x > size - 9 && y < 8) || (x < 8 && y > size - 9);
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      if (inFinder(x, y) || next() < 0.45) {
+        const cell = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        cell.setAttribute('x', x); cell.setAttribute('y', y);
+        cell.setAttribute('width', 1); cell.setAttribute('height', 1);
+        cell.setAttribute('fill', '#10151c');
+        svg.append(cell);
+      }
+    }
+  }
+  wrap.append(svg);
+  const caption = document.createElement('p');
+  caption.className = 'muted center';
+  caption.style.margin = 'var(--space-2) 0 0';
+  caption.textContent = '二维码示意图（不可扫描，仅演示形态）';
+  const box = document.createElement('div');
+  box.append(wrap, caption);
+  return box;
+}
+
+function button(text, handler) {
+  const node = document.createElement('button');
+  node.className = 'btn--primary';
+  node.textContent = text;
+  node.style.width = '100%';
+  node.addEventListener('click', handler);
+  return node;
+}
+
+function note(text) {
+  const node = document.createElement('p');
+  node.className = 'note';
+  node.textContent = text;
+  return node;
+}
+
+function render() {
+  const host = document.getElementById('branch');
+  host.replaceChildren();
+
+  // ── 取不到本页链接（路径里没有令牌）：如实兜底，不表现为死路 ──
+  if (!token) {
+    host.append(note('支付链接获取失败，请返回商家页面重新打开'));
+    return;
+  }
+
+  // ── PC：渲染二维码，不跳转 ──
+  if (terminal === 'pc') {
+    host.append(qrFigure(channel === 'alipay' ? qrCode : payUrl));
+    const tip = document.createElement('p');
+    tip.className = 'muted center';
+    tip.textContent = channel === 'alipay'
+      ? '请使用支付宝扫一扫完成付款'
+      : '请使用微信扫码，在手机上完成支付';
+    host.append(tip);
+    return;
+  }
+
+  // ── 手机 · 微信内 ──
+  if (terminal === 'wechat-in') {
+    if (channel === 'wechat') {
+      host.append(note('正在调起支付面板…（真实收银页在微信内进入即自动完成授权并调起，买家无需先点按钮）'));
+      const list = document.createElement('ol');
+      list.className = 'steps';
+      for (const step of ['进入本页即自动发起', '完成静默授权', '调起支付面板']) {
+        const li = document.createElement('li');
+        li.textContent = step;
+        list.append(li);
+      }
+      host.append(list);
+    } else {
+      host.append(note('当前处于应用内置浏览器，可复制链接后在系统浏览器中打开支付'));
+      host.append(button('复制支付链接', () => copy(payUrl)));
+    }
+    return;
+  }
+
+  // ── 手机 · 微信外 ──
+  if (channel === 'alipay') {
+    // 手势主按钮（D-01 修订）：跳转只发生在点击手势内——无手势自动跳转已被
+    // 真机证伪（主流手机浏览器均连导航都不发生），演示页同样不得自动跳。
+    host.append(qrFigure(qrCode));
+    host.append(button('打开支付宝', () => {
+      window.location.assign(qrCode);
+    }));
+    host.append(note('没打开？长按二维码识别；识别不了就截屏保存，打开支付宝 → 扫一扫 → 相册 → 选刚截的图'));
+    return;
+  }
+
+  const title = document.createElement('h2');
+  title.textContent = '请在微信中打开完成支付';
+  host.append(title);
+
+  const notice = document.createElement('p');
+  notice.className = 'muted';
+  notice.textContent = '微信支付需要在微信内打开本链接；点击下方按钮复制链接并打开微信；链接发给自己即可。';
+  host.append(notice);
+
+  const feedback = document.createElement('p');
+  feedback.className = 'muted';
+  feedback.setAttribute('role', 'status');
+  feedback.style.minHeight = '1.5em';
+
+  host.append(button('复制链接并打开微信', async () => {
+    const ok = await copy(payUrl);
+    feedback.textContent = ok ? '已复制链接，正在打开微信…' : '未能自动复制，请长按下方链接手动复制';
+    if (!ok) {
+      const manual = document.createElement('input');
+      manual.readOnly = true;
+      manual.value = payUrl;
+      manual.setAttribute('aria-label', '支付链接');
+      manual.style.width = '100%';
+      manual.style.minHeight = '44px';
+      manual.style.marginTop = 'var(--space-2)';
+      host.append(manual);
+    }
+    const anchor = document.createElement('a');
+    anchor.href = 'weixin://';
+    anchor.style.display = 'none';
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+  }));
+  host.append(feedback);
+
+  const steps = document.createElement('ol');
+  steps.className = 'steps';
+  for (const step of ['打开微信', '把链接粘贴发送给「文件传输助手」', '点开链接即可进入支付']) {
+    const li = document.createElement('li');
+    li.textContent = step;
+    steps.append(li);
+  }
+  host.append(steps);
+  host.append(note('如需使用支付宝支付，请联系商家重新选择支付方式。'));
+}
+
+async function copy(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch (error) {
+    const field = document.createElement('textarea');
+    field.value = text;
+    field.style.position = 'fixed';
+    field.style.opacity = '0';
+    document.body.append(field);
+    field.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (inner) { ok = false; }
+    field.remove();
+    return ok;
+  }
+}
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>终端预览（本地 demo）</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="page-head">
+    <h1>终端预览</h1>
+    <p class="muted">同一收银地址在不同终端上的行为不同。这里手动切换终端与通道，看到的就是买家会看到的形态——与 <span class="mono">docs/06-cashier-integration.md</span> 的终端能力矩阵一一对应。</p>
+    <div class="link-row"><a href="/">← 回到商家控制台</a></div>
+  </header>
+
+  <div class="grid grid--2">
+    <section class="card">
+      <h3>终端</h3>
+      <div class="segmented" role="group" aria-label="选择终端">
+        <button type="button" data-terminal="pc" aria-pressed="true">PC 浏览器</button>
+        <button type="button" data-terminal="wechat-out" aria-pressed="false">手机 · 微信外</button>
+        <button type="button" data-terminal="wechat-in" aria-pressed="false">手机 · 微信内</button>
+      </div>
+
+      <h3 style="margin-top: var(--space-4)">通道</h3>
+      <div class="segmented" role="group" aria-label="选择支付通道">
+        <button type="button" data-channel="alipay" aria-pressed="true">支付宝</button>
+        <button type="button" data-channel="wechat" aria-pressed="false">微信支付</button>
+      </div>
+
+      <p class="muted" style="margin-top: var(--space-4)" id="expect"></p>
+    </section>
+
+    <section class="card">
+      <div class="device-frame device-frame--phone">
+        <iframe id="frame" title="收银页预览" src="/cashier/preview?terminal=pc&channel=alipay"></iframe>
+      </div>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top: var(--space-4)">
+    <h2>矩阵速查</h2>
+    <table>
+      <thead><tr><th>终端</th><th>支付宝</th><th>微信</th></tr></thead>
+      <tbody>
+        <tr><th>PC 浏览器</th><td>渲染官方收款码，页内扫码，不跳转</td><td>渲染平台收银页二维码（扫码后进微信内）</td></tr>
+        <tr><th>手机 · 微信外</th><td>手势主按钮「打开支付宝」（二维码 → 按钮 → 按钮下的兜底说明，三样都在手势前已渲染）</td><td>推荐路径：复制链接并打开微信 + 三步说明</td></tr>
+        <tr><th>手机 · 微信内</th><td>不自动跳转，给复制链接引导</td><td>零点击：进入即自动授权并调起支付面板</td></tr>
+        <tr><th>商家 App / 宿主内</th><td colspan="2">必须跳系统浏览器后再按「手机 · 微信外」处理；禁止 WebView 内嵌收银页</td></tr>
+      </tbody>
+    </table>
+  </section>
+</div>
+
+<script>
+'use strict';
+
+const EXPECT = {
+  'pc|alipay': 'PC 上支付宝单：渲染官方收款码，页面不跳转，买家自行扫码。',
+  'pc|wechat': 'PC 上微信单：渲染的是「平台收银页地址」的二维码——扫码后进手机微信内，由页面调起支付（中转链）。',
+  'wechat-out|alipay': '手机浏览器（微信外）的支付宝单：渲染顺序是二维码 → 手势主按钮「打开支付宝」→ 按钮下的兜底说明（长按识别 / 截屏 → 相册扫码），三样都在买家手势之前已渲染；无手势自动跳转已被真机证伪。',
+  'wechat-out|wechat': '手机浏览器（微信外）的微信单：给出推荐路径（复制链接并打开微信 + 三步说明），不承诺一步直达支付面板。',
+  'wechat-in|alipay': '微信内打开的支付宝单：不自动跳转（会被微信拦截），只给「复制链接到系统浏览器打开」引导。',
+  'wechat-in|wechat': '微信内打开的微信单：零点击自动调起支付面板，买家无需先点按钮。',
+};
+
+const state = { terminal: 'pc', channel: 'alipay' };
+
+function sync(updateFrame) {
+  for (const button of document.querySelectorAll('[data-terminal]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.terminal === state.terminal));
+  }
+  for (const button of document.querySelectorAll('[data-channel]')) {
+    button.setAttribute('aria-pressed', String(button.dataset.channel === state.channel));
+  }
+  document.getElementById('expect').textContent = EXPECT[`${state.terminal}|${state.channel}`] || '';
+  if (updateFrame) {
+    document.getElementById('frame').src =
+      `/cashier/preview?terminal=${state.terminal}&channel=${state.channel}`;
+  }
+}
+
+for (const button of document.querySelectorAll('[data-terminal]')) {
+  button.addEventListener('click', () => { state.terminal = button.dataset.terminal; sync(true); });
+}
+for (const button of document.querySelectorAll('[data-channel]')) {
+  button.addEventListener('click', () => { state.channel = button.dataset.channel; sync(true); });
+}
+
+sync(false);
+</script>
+</body>
+</html>

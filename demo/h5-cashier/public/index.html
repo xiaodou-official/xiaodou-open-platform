@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>商家控制台（本地 demo）</title>
+<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="page-head">
+    <div class="row row--between">
+      <div>
+        <h1>商家控制台 · 本地 demo</h1>
+        <p class="muted">一个进程里同时跑「你的后端」和「模拟平台」：所有调用都真的走请求签名与事件验签，只用 loopback 与内存。</p>
+      </div>
+      <span class="badge">LOCAL / MOCK · 不连生产</span>
+    </div>
+    <div class="link-row">
+      <a href="/preview.html">→ 终端预览（PC / 手机微信外 / 手机微信内）</a>
+      <a href="#log">→ 调用日志</a>
+    </div>
+  </header>
+
+  <div class="grid grid--sidebar">
+    <section class="card">
+      <h2>1. 创建订单</h2>
+      <p class="muted">商家后端会带 <span class="mono">XD-Signature-v1</span> 六头调用模拟平台；平台先验签再建单。</p>
+      <div class="row">
+        <button class="btn--primary" id="create-alipay">创建支付宝单</button>
+        <button id="create-wechat">创建微信单</button>
+        <button id="refresh">刷新状态</button>
+      </div>
+      <div class="stack" id="orders" style="margin-top: var(--space-4)"></div>
+    </section>
+
+    <aside class="card">
+      <h2>会话配置</h2>
+      <table>
+        <tr><th>appId</th><td class="mono" id="cfg-appId">—</td></tr>
+        <tr><th>商家 kid</th><td class="mono" id="cfg-keyId">—</td></tr>
+        <tr><th>平台 kid</th><td class="mono" id="cfg-platformKeyId">—</td></tr>
+        <tr><th>事件投递地址</th><td class="mono" id="cfg-notifyUrl">—</td></tr>
+      </table>
+      <p class="muted" style="margin-top: var(--space-3)">密钥对每次启动在进程内生成，不落盘、不进仓库。</p>
+    </aside>
+  </div>
+
+  <div class="grid grid--2" style="margin-top: var(--space-4)">
+    <section class="card">
+      <h2>平台事件（模拟平台侧账本）</h2>
+      <p class="muted">支付/关闭/退款都会产生事件，并按 <span class="mono">XD-Webhook-v1</span> 签名投递到商家后端。</p>
+      <table><thead><tr><th>事件</th><th>类型</th><th>状态</th></tr></thead><tbody id="events"></tbody></table>
+    </section>
+    <section class="card">
+      <h2>商家侧已验签落账</h2>
+      <p class="muted">验签失败的投递不会出现在这里（demo 会打印一行失败日志）；重复投递按 <span class="mono">eventId</span> 去重。</p>
+      <table><thead><tr><th>事件</th><th>类型</th><th>金额（分）</th></tr></thead><tbody id="merchant-events"></tbody></table>
+    </section>
+  </div>
+
+  <section class="card" id="log" style="margin-top: var(--space-4)">
+    <h2>调用日志</h2>
+    <ul class="log" id="log-list"></ul>
+  </section>
+
+  <section class="card" style="margin-top: var(--space-4)">
+    <h2>这个 demo 演示了什么</h2>
+    <ul class="steps">
+      <li>下单 → 拿到 <span class="mono">payUrl</span> 与（支付宝单）<span class="mono">qrCode</span>；两种收款材料的用法见 <span class="mono">docs/06</span>。</li>
+      <li>重拉起 = 关旧建新：新材料同批更换，旧码不可复用。</li>
+      <li>查单是<b>本地权威读</b>：查询接口的 <span class="mono">payUrl</span>/<span class="mono">qrCode</span> 恒为空。</li>
+      <li>终态只认事件与查单——<b>页面回跳不算终态</b>。</li>
+      <li>事件验签（原始字节）→ <span class="mono">eventId</span> 去重 → 落账 → 回 <span class="mono">success</span>。</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+'use strict';
+
+const STATUS_LABEL = {
+  CREATED: ['已创建', ''], PAYING: ['待支付', 'badge--warning'], SUCCEEDED: ['支付成功', 'badge--success'],
+  CLOSED: ['已关闭', ''], FAILED: ['失败', 'badge--danger'], UNKNOWN: ['状态不确定', 'badge--warning'],
+};
+
+async function call(path, body) {
+  const response = await fetch(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body || {}),
+  });
+  return response.json().catch(() => ({}));
+}
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function renderOrders(orders) {
+  const host = document.getElementById('orders');
+  host.replaceChildren();
+  if (!orders.length) {
+    host.append(el('p', 'muted', '还没有订单：点上面任意一个按钮创建一笔。'));
+    return;
+  }
+  for (const order of orders.slice().reverse()) {
+    const card = el('div', 'card');
+    const [label, cls] = STATUS_LABEL[order.status] || [order.status, ''];
+    const head = el('div', 'row row--between');
+    head.append(el('h3', null, `${order.channel} · ${order.outTradeNo}`));
+    head.append(el('span', `badge ${cls}`, label));
+    card.append(head);
+
+    const rows = [
+      ['金额', `${order.amountFen} 分`],
+      ['payUrl', order.payUrl || '（查询接口恒空 / 无有效尝试）'],
+      ['qrCode', order.qrCode || '（不下发）'],
+      ['到期', order.expireAt],
+    ];
+    const table = el('table');
+    for (const [key, value] of rows) {
+      const tr = el('tr');
+      tr.append(el('th', null, key), el('td', 'mono', String(value)));
+      table.append(tr);
+    }
+    card.append(table);
+
+    const actions = el('div', 'row');
+    actions.style.marginTop = 'var(--space-3)';
+    const add = (text, path) => {
+      const button = el('button', null, text);
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        await call(path);
+        button.disabled = false;
+        await refresh();
+      });
+      actions.append(button);
+    };
+    add('重拉起', `/merchant/orders/${order.outTradeNo}/attempts`);
+    add('查单', `/merchant/orders/${order.outTradeNo}/sync`);
+    add('关单', `/merchant/orders/${order.outTradeNo}/close`);
+    add('退款', `/merchant/orders/${order.outTradeNo}/refund`);
+    if (order.status === 'PAYING' || order.status === 'CREATED') {
+      add('模拟买家完成支付', `/merchant/simulate/${order.outTradeNo}/pay`);
+    }
+    card.append(actions);
+
+    if (order.payUrl) {
+      const link = el('a', 'muted', '→ 打开这笔的收银页（本地 mock）');
+      link.href = order.payUrl;
+      link.style.display = 'inline-block';
+      link.style.marginTop = 'var(--space-2)';
+      card.append(link);
+    }
+    host.append(card);
+  }
+}
+
+function renderEvents(snapshot) {
+  const events = document.getElementById('events');
+  events.replaceChildren();
+  for (const event of snapshot.events) {
+    const tr = el('tr');
+    tr.append(el('td', 'mono', event.eventId.slice(0, 16) + '…'), el('td', null, event.eventType), el('td', null, event.status));
+    events.append(tr);
+  }
+  const landed = document.getElementById('merchant-events');
+  landed.replaceChildren();
+  for (const event of snapshot.merchantEvents) {
+    const tr = el('tr');
+    tr.append(el('td', 'mono', event.eventId.slice(0, 16) + '…'), el('td', null, event.eventType), el('td', null, String(event.eventAmountFen)));
+    landed.append(tr);
+  }
+}
+
+function renderLog(snapshot) {
+  const list = document.getElementById('log-list');
+  list.replaceChildren();
+  for (const entry of snapshot.log) {
+    const li = el('li');
+    const time = el('time', null, entry.at.slice(11, 19));
+    li.append(time, el('strong', null, entry.kind + ' '), document.createTextNode(entry.message));
+    list.append(li);
+  }
+  document.getElementById('cfg-appId').textContent = snapshot.config.appId;
+  document.getElementById('cfg-keyId').textContent = snapshot.config.keyId;
+  document.getElementById('cfg-platformKeyId').textContent = snapshot.config.platformKeyId;
+  document.getElementById('cfg-notifyUrl').textContent = snapshot.config.notifyUrl;
+}
+
+async function refresh() {
+  const response = await fetch('/state');
+  const snapshot = await response.json();
+  renderOrders(snapshot.orders);
+  renderEvents(snapshot);
+  renderLog(snapshot);
+}
+
+document.getElementById('create-alipay').addEventListener('click', async () => {
+  await call('/merchant/orders', { channel: 'ALIPAY_H5' });
+  await refresh();
+});
+document.getElementById('create-wechat').addEventListener('click', async () => {
+  await call('/merchant/orders', { channel: 'WECHAT_H5' });
+  await refresh();
+});
+document.getElementById('refresh').addEventListener('click', refresh);
+
+refresh();
+setInterval(refresh, 3000);
+</script>
+</body>
+</html>
