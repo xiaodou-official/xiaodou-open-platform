@@ -72,9 +72,9 @@
       "note": null
     },
     "publicRelease": {
-      "status": "PENDING",
+      "status": "DELIVERED",
       "path": "releases/v1.0.0.md",
-      "note": "公开仓未建立（发布参数待拍板），release notes 已备稿"
+      "note": "公开仓 github.com/xiaodou-official/xiaodou-open-platform（单树快照推送，tag v1.0.0 = 同一棵内容树）"
     }
   }
 }
