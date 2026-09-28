@@ -151,9 +151,9 @@
       "note": null
     },
     "publicRelease": {
-      "status": "PENDING",
+      "status": "DELIVERED",
       "path": "releases/v1.0.0.md",
-      "note": "公开仓 github.com/xiaodou-official/xiaodou-open-platform 与 Gitee 镜像 gitee.com/lu-wulei/xiaodou-open-platform（单树快照推送=git commit-tree HEAD:open-platform，同一快照 SHA 两侧逐字一致；tag v1.0.0 指向首发内容树、版本内资料修订随 main 滚动）。2026-09-28 资料修订重推批已推送；其后 README 增补了指向姊妹公开仓 `xiaodou-market`（产品说明面）的链接，**尚未重推**，故本通道状态再次退回 PENDING——重推后按 PUBLISHING.md §3 第 6 步回填 publishedAt 与状态。"
+      "note": "公开仓 github.com/xiaodou-official/xiaodou-open-platform 与 Gitee 镜像 gitee.com/lu-wulei/xiaodou-open-platform（单树快照推送=git commit-tree HEAD:open-platform，同一快照 SHA 两侧逐字一致；tag v1.0.0 指向首发内容树、版本内资料修订随 main 滚动）。2026-09-28 两批：资料修订重推批（响应验签参考实现、开通申请判据简化、域名口径定稿）+ 本批（README 增补指向姊妹公开仓 `xiaodou-market` 的链接，补上站外可发现路径）。"
     }
   }
 }
