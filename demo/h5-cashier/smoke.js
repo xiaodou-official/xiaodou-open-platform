@@ -174,6 +174,17 @@ async function main() {
       check(`预览页分支文案在位：${name}`, page.status === 200 && page.text.includes(needle));
     }
 
+    console.log('\n[8b] 响应签名（XD-Response-v1，A6 的本地可跑形态）');
+    const verifySnapshot = (await state(port)).json;
+    const rv = verifySnapshot.lastResponseVerification;
+    check('商家侧对平台响应做了验签并记录', Boolean(rv));
+    check('四头齐备且验签通过', rv?.signedHeadersPresent === true && rv?.ok === true,
+      `实际 ${JSON.stringify(rv)}`);
+    check('/state 暴露平台公钥与 kid（mock 的公示面）',
+      typeof verifySnapshot.platformPublicKeyPem === 'string'
+        && verifySnapshot.platformPublicKeyPem.includes('BEGIN PUBLIC KEY')
+        && typeof verifySnapshot.platformKid === 'string' && verifySnapshot.platformKid.length > 0);
+
     console.log('\n[9] 事件体与生产同形（关闭单金额恒 0、退款事件带 outRefundNo）');
     const eventSnapshot = (await state(port)).json;
     const events = eventSnapshot.events || [];

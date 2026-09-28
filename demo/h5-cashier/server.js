@@ -22,6 +22,7 @@ const path = require('node:path');
 
 const sign = require('../../examples/node/sign.js');
 const webhook = require('../../examples/node/verify_webhook.js');
+const { verifyResponse } = require('../../examples/node/verify_response.js');
 
 const PORT = (() => {
   const index = process.argv.indexOf('--port');
@@ -41,6 +42,7 @@ const platformKeys = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
 const merchantPublicKeyPem = merchantKeys.publicKey.export({ type: 'spki', format: 'pem' }).toString();
 const merchantPrivateKeyPem = merchantKeys.privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
 const platformPrivateKeyPem = platformKeys.privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
+const PLATFORM_KID = 'xdpk-demo-2026';
 const platformPublicKeyPem = platformKeys.publicKey.export({ type: 'spki', format: 'pem' }).toString();
 
 // ── 内存状态 ─────────────────────────────────────────────────────────
@@ -268,15 +270,78 @@ async function merchantCall(req, method, url, body) {
     headers,
     body: method === 'POST' && raw ? raw : undefined,
   });
-  const text = await response.text();
-  log('merchant→platform', `${method} ${url} → ${response.status} ${text.slice(0, 160)}`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  const text = bytes.toString('utf8');
+  // 响应验签（XD-Response-v1）：商家侧**真的去验**——四头齐备才验，缺头按未签名
+  // 响应处理（鉴权链之前的拒绝不带四头）。这是上线清单 A6 在本地唯一跑得通的形态。
+  const verification = verifyResponse({
+    status: response.status,
+    headers: response.headers,
+    rawBody: bytes,
+    platformPublicKeyPem,
+  });
+  state.lastResponseVerification = {
+    url,
+    status: response.status,
+    ok: verification.ok === true,
+    reason: verification.reason || '',
+    signedHeadersPresent: ['x-xd-response-sign', 'x-xd-response-key-id', 'x-xd-response-timestamp', 'x-xd-response-nonce']
+      .every((name) => response.headers.get(name) !== null),
+  };
+  log('merchant→platform',
+    `${method} ${url} → ${response.status} ${text.slice(0, 160)}`
+    + `${state.lastResponseVerification.signedHeadersPresent ? ` [响应验签 ${state.lastResponseVerification.ok ? 'PASS' : state.lastResponseVerification.reason}]` : ' [未签名响应]'}`);
   return { status: response.status, text };
 }
 
 // ── HTTP 基础设施 ────────────────────────────────────────────────────
-function send(res, status, body, contentType = 'application/json; charset=utf-8') {
-  res.writeHead(status, { 'Content-Type': contentType, 'Cache-Control': 'no-store' });
-  res.end(body);
+/**
+ * 响应签名（`XD-Response-v1`）：mock 平台对**已过鉴权链**的响应回四头，
+ * 让卖家能在本地真的把 A6（响应验签）跑通——此前 mock 不回四头，这一条在本地
+ * **永远测不到**（示例侧参考实现见 `examples/node/verify_response.js`）。
+ *
+ * 语义与平台一致：四头齐备才签；鉴权链之前的拒绝（来源 IP、请求体门卫、
+ * 六头形态、验签失败、重放）**不签**。
+ */
+function responseSignatureHeaders(status, contentType, requestId, rawBody) {
+  if (!requestId) return {};
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const nonce = crypto.randomBytes(16).toString('hex');
+  const canonicalContentType = String(contentType || '').split(';', 1)[0].trim().toLowerCase();
+  const signingString = [
+    'XD-Response-v1',
+    String(status),
+    canonicalContentType,
+    String(requestId),
+    timestamp,
+    nonce,
+    PLATFORM_KID,
+    crypto.createHash('sha256').update(rawBody).digest('hex'),
+  ].join('\n');
+  const sign = crypto.createSign('RSA-SHA256').update(signingString, 'utf8')
+    .sign(platformPrivateKeyPem, 'base64');
+  return {
+    'X-XD-Response-Key-Id': PLATFORM_KID,
+    'X-XD-Response-Timestamp': timestamp,
+    'X-XD-Response-Nonce': nonce,
+    'X-XD-Response-Sign': sign,
+  };
+}
+
+function send(res, status, body, contentType = 'application/json; charset=utf-8', requestId = undefined) {
+  const bytes = Buffer.isBuffer(body) ? body : Buffer.from(String(body), 'utf8');
+  const effectiveRequestId = requestId === undefined ? (res.__xdRequestId || '') : requestId;
+  res.writeHead(status, {
+    'Content-Type': contentType,
+    'Cache-Control': 'no-store',
+    // 与平台一致：六头形态通过后就回显 `X-XD-Request-Id`（响应验签的
+    // `REQUEST_ID` 行取的正是它——不回显会让验签永远对不上）。
+    ...(effectiveRequestId ? { 'X-XD-Request-Id': effectiveRequestId } : {}),
+    // 鉴权链**通过之后**的响应一律带四头（含业务拒绝）；mockRoutes 在 auth.ok
+    // 时把 requestId 挂到 res 上，未过鉴权链的拒绝自然不带。
+    ...responseSignatureHeaders(status, contentType, effectiveRequestId, bytes),
+  });
+  res.end(bytes);
 }
 
 function readBody(req) {
@@ -408,6 +473,7 @@ function platformPay(outTradeNo) {
 async function mockRoutes(req, res, urlPath, rawBody) {
   const auth = verifyMerchantRequest(req, rawBody);
   if (!auth.ok) return send(res, 401, JSON.stringify({ code: auth.code, message: '签名验证失败', requestId: '' }));
+  res.__xdRequestId = auth.requestId;
 
   if (req.method === 'POST' && urlPath === '/mock/open/v1/payments') {
     const body = JSON.parse(rawBody.toString('utf8'));
@@ -483,6 +549,9 @@ function snapshotForUi() {
     refunds: [...state.refunds.values()],
     events: state.events.slice(-20).reverse(),
     merchantEvents: state.merchantEvents.slice(-20).reverse(),
+    lastResponseVerification: state.lastResponseVerification || null,
+    platformPublicKeyPem,
+    platformKid: PLATFORM_KID,
     log: state.merchantLog,
     config: { appId: APP_ID, keyId: KEY_ID, platformKeyId: PLATFORM_KEY_ID, notifyUrl: NOTIFY_URL, port: PORT },
   };

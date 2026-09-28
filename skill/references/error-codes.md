@@ -23,12 +23,12 @@
 | `OPEN_API_CHANNEL_UNAVAILABLE` | 422 | 通道链路未放行：**正常拒绝**，不要重试刷量 |
 | `OPEN_API_CHANNEL_UNSUPPORTED` | 422 | 通道不受支持（预留词表位） |
 | `OPEN_API_SCOPE_CHANNEL_MISMATCH` | 422 | 申报交易形态与通道绑定不符 |
-| `OPEN_API_LIMIT_EXCEEDED` | 422 | 限额越界：先关掉在途未支付订单；限额无自助查询面，需调整走官网反馈渠道（附 `requestId`） |
+| `OPEN_API_LIMIT_EXCEEDED` | 422 | 限额越界：信封带 `details.scopes`（触发面）；先关掉在途未支付订单；限额无自助查询面，需调整走官网反馈渠道（附 `requestId`） |
 | `OPEN_API_RATE_LIMITED` | 429 | 频率限流：指数退避 + 复用 `requestId` |
 | `OPEN_API_PROVIDER_REJECTED` | 502 | 支付机构拒绝：先查单核对状态，不要原样无限重试 |
 | `OPEN_API_GUARD_UNAVAILABLE` | 503 | 平台守卫不可用（fail-closed）：退避重试，**不要绕过** |
 
-**总表之外的 `code`**：平台的错误投影对未识别异常有兜底分支，正常走不到；若收到，按 **`503` 语义**处置（退避重试）并带 `requestId` + `code` 原文走官网反馈，**不要**据此判断业务结果或换单号重下单。单笔金额超出**合同硬上限**返回的是 `400 OPEN_API_BODY_INVALID`，不是 `422`。
+**码空间封闭**：平台侧内部故障到你这儿之前已中性化为表内 `503 OPEN_API_GUARD_UNAVAILABLE`（不会透内部码/原文）；若真收到表外码，按 `503` 语义处置并带 `requestId` + `code` 原文反馈。**`details` 只在两个码上出现**：边缘腿来源 IP 拒绝的 `reason`、限额越界的 `scopes`。单笔金额超出**合同硬上限**返回的是 `400 OPEN_API_BODY_INVALID`，不是 `422`。
 
 ## 高频误区
 

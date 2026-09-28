@@ -10,7 +10,8 @@
 | PHP | [`php/xd_signature.php`](./php/xd_signature.php) | PHP 8+（`openssl` / `hash`） |
 | Python | [`python/xd_signature.py`](./python/xd_signature.py) | `cryptography` |
 
-事件验签参考实现：[`node/verify_webhook.js`](./node/verify_webhook.js)。
+事件验签参考实现：[`node/verify_webhook.js`](./node/verify_webhook.js)；
+响应验签参考实现：[`node/verify_response.js`](./node/verify_response.js)（自检 `--golden` 不需要密钥）。
 
 ## 1. golden 向量（不依赖密钥的自检）
 
@@ -103,6 +104,6 @@ XD_APP_ID=xdop_xxx XD_KEY_ID=kid_xxx XD_PRIVATE_KEY_PATH=./private_key.pem \
 
 ## 4. 覆盖的调用场景
 
-示例覆盖：下单、重拉起支付尝试、查单、关单、退款、事件验签与 `eventId` 去重。**未示范**：退款查询（接口本身可用，demo 未接入口）、`UNKNOWN` 状态的补偿查证（demo 不产生该状态），以及**响应验签 `XD-Response-v1`——本目录没有它的参考实现**（规范串见 [安全红线 §3](../docs/09-security-redlines.md)，请按 8 行串自行实现并用固定输入自比对）。
+示例覆盖：下单、重拉起支付尝试、查单、关单、退款、事件验签与 `eventId` 去重。**未示范**：退款查询（接口本身可用，demo 未接入口）、`UNKNOWN` 状态的补偿查证（demo 不产生该状态），响应验签由 [`node/verify_response.js`](./node/verify_response.js) 覆盖（四头齐备才验；缺头按未签名响应处理）。
 
 **不示范**的两件事（都是错的）：绕过幂等重复下单、把收银页回跳当支付终态。
