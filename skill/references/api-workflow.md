@@ -29,7 +29,7 @@ Base URL 由平台下发（文档里写 `<BASE_URL>`），**不要硬编码 host
 
 **实现要点**：网络超时/5xx 重试时**复用同一个 `requestId` 与同一份请求体**，但 **nonce 必须换新**（同一个 nonce 在 10 分钟内复用会拿到 `409 OPEN_API_REPLAY`，永远走不到幂等重放）；`409` 的处置是**先查单**，不是换号重下单。
 
-**请求头**：六头成组；所有 `POST` 都要带 `Content-Type: application/json`（允许 charset 参数），`GET` 可省；各头长度/字符集是硬约束，见 `docs/03-api-reference.md` §1。
+**请求头**：六头成组；所有 `POST` 都要带 `Content-Type: application/json`（允许 charset 参数），`GET` 可省——**省掉时签名串的 `CONTENT_TYPE` 行是空行**（不是 `application/json`）；各头长度/字符集是硬约束，见 `docs/03-api-reference.md` §1。**请求字段约束**（`outTradeNo` 6–64 位且不含点号、`amountFen` 区间、各字段长度上限、**业务摘要成员**）见 `docs/03-api-reference.md` §2.7——`returnUrl` 在摘要内，改了再重试是 `409`。
 
 ## 3. 状态与终态
 
@@ -47,7 +47,7 @@ Base URL 由平台下发（文档里写 `<BASE_URL>`），**不要硬编码 host
 ## 5. 交付边界（常被写错）
 
 - 平台负责收款与支付事实；**交付（卡密/发货/开通）由商家自建系统承担**。
-- 收银页支付完成后 `303` 回你冻结的 `returnUrl`——那只是导航。`returnUrl` 落地页只做展示与轮询自己的服务端，**不要把交付内容放进 query**。
+- 收银页在买家点「**返回商家**」时 `303` 回你冻结的 `returnUrl`——那只是导航，**不是自动跳转**（买家不点、刷新过页面、或在另一台设备付款都不会回跳）。`returnUrl` 落地页只做展示与轮询自己的服务端，**不要把交付内容放进 query**。
 
 ## 6. 最小可用骨架（伪代码）
 

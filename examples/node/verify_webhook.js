@@ -64,8 +64,20 @@ function buildWebhookSigningString({ eventId, eventType, timestamp, nonce, keyId
 function verifyWebhook({ headers, rawBody, platformPublicKeyPem }) {
   try {
     const header = (name) => {
-      const raw = typeof headers.get === 'function' ? headers.get(name) : headers[name];
-      return raw === undefined || raw === null ? '' : String(raw).trim();
+      if (typeof headers.get === 'function') {
+        const raw = headers.get(name);
+        return raw === undefined || raw === null ? '' : String(raw).trim();
+      }
+      // 普通对象：按键名**大小写不敏感**查找（HTTP 头名不区分大小写；
+      // 只按小写键查表会把规范大小写键的合法投递判成验签失败）。
+      const wanted = String(name).toLowerCase();
+      for (const key of Object.keys(headers || {})) {
+        if (key.toLowerCase() === wanted) {
+          const raw = headers[key];
+          return raw === undefined || raw === null ? '' : String(raw).trim();
+        }
+      }
+      return '';
     };
     const signatureBase64 = header(WEBHOOK_HEADERS.SIGNATURE);
     const signingString = buildWebhookSigningString({

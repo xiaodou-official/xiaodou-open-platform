@@ -29,7 +29,7 @@ XD-Signature-v1
 | CANONICAL_QUERY | 逐键值解码一次 → RFC3986 重编码 → 按键名排序（重复键保留原相对顺序）；无 query 时为空行 |
 | TIMESTAMP | 秒级 epoch（强校验时间窗） |
 | NONCE | 一次性；复用即判重放（`409 OPEN_API_REPLAY`） |
-| CONTENT_TYPE | 小写、去 `;` 参数 |
+| CONTENT_TYPE | 小写、去 `;` 参数；**没有带这个头时该行为空行**（`GET` 且无请求体即如此）——不要写 `application/json` |
 | SHA256_HEX(rawBody) | 原始请求体字节的小写十六进制；无体为空串哈希 |
 
 ## 2. 响应签名 `XD-Response-v1`（平台 → 商家）

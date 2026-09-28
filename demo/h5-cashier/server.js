@@ -165,19 +165,34 @@ function applyAttempt(order) {
   if (order.status === 'CREATED') order.status = 'PAYING';
 }
 
-function emitEvent(order, eventType) {
+/**
+ * 事件体与**生产同形**（`webhookEventService`）：
+ * - `eventAmountFen`：只有 `PAYMENT_SUCCEEDED` 带实付金额，关闭/失败恒 `0`；退款事件带退款额；
+ * - `reason`：仅 `PAYMENT_CLOSED` 且属平台封闭词表时回带，其余为空；
+ * - `outRefundNo`：退款事件必带，订单事件恒 `null`；
+ * - `stateVersion`：**恒 `0`**——生产当前不逐次递增，用它判乱序会把后续事件
+ *   全部当成旧事件丢掉。判新旧请用订单/退款状态机。
+ */
+function emitEvent(order, eventType, refund = null) {
+  const isRefund = Boolean(refund);
+  const isOrderSucceeded = !isRefund && eventType === 'PAYMENT_SUCCEEDED';
   const event = {
     eventId: `wev_${crypto.randomBytes(12).toString('hex')}`,
     eventType,
     appId: APP_ID,
     outTradeNo: order.outTradeNo,
-    outRefundNo: null,
-    eventAmountFen: order.amountFen,
-    grossAmountFen: order.amountFen,
-    status: order.status,
-    reason: order.closedReason === 'EXPIRED' ? 'EXPIRED' : null,
+    outRefundNo: isRefund ? refund.outRefundNo : null,
+    eventAmountFen: isRefund
+      ? Number(refund.amountFen)
+      : (isOrderSucceeded ? Number(order.amountFen) : 0),
+    grossAmountFen: Number(order.amountFen),
+    status: isRefund ? refund.state : order.status,
+    reason: !isRefund && eventType === 'PAYMENT_CLOSED'
+      && ['EXPIRED', 'MERCHANT_CLOSED', 'PROVIDER_CLOSED'].includes(order.closedReason)
+      ? order.closedReason
+      : null,
     occurredAt: Math.floor(Date.now() / 1000),
-    stateVersion: order.stateVersion = (order.stateVersion || 0) + 1,
+    stateVersion: 0,
     attach: order.attach,
     feeProjection: order.feeProjection,
   };
@@ -332,6 +347,10 @@ async function handle(req, res) {
 async function merchantRoutes(req, res, urlPath, body) {
   if (req.method === 'POST' && urlPath === '/merchant/orders') {
     const outTradeNo = body.outTradeNo || `DEMO${Date.now()}`;
+    // ⚠️ 这不是生产请求体形状：为保持 demo **零外部依赖**，这里省掉了必填的
+    // `payerClientIp` 且 `returnUrl` 用的是本机 http。生产请求体以
+    // `docs/01-quickstart.md` §2 的六个必填字段为准（`payerClientIp` 必须是
+    // 买家公网 IP、`returnUrl` 必须 https）——照抄本对象会在真实平台拿到 400。
     const called = await merchantCall(req, 'POST', '/mock/open/v1/payments', {
       outTradeNo,
       channel: body.channel || 'ALIPAY_H5',
@@ -443,7 +462,7 @@ async function mockRoutes(req, res, urlPath, rawBody) {
       updatedAt: new Date().toISOString(),
     };
     state.refunds.set(body.outRefundNo, refund);
-    const event = emitEvent(order, 'REFUND_SUCCEEDED');
+    const event = emitEvent(order, 'REFUND_SUCCEEDED', refund);
     return send(res, 201, JSON.stringify({ requestId: auth.requestId, ...refund, eventId: event.eventId }));
   }
   const refundQuery = urlPath.match(/^\/mock\/open\/v1\/refunds\/([^/]+)$/);

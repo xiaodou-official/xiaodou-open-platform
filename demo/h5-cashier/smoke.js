@@ -156,9 +156,12 @@ async function main() {
     });
     check('签名篡改请求被 401 拒绝', tampered.status === 401, `实际 ${tampered.status}`);
 
-    console.log('\n[8] 静态页面与终端矩阵');
-    // 四端 × 两通道全组合：矩阵文档（docs/06）里的每一格都要有一页真的渲染得出来，
-    // 否则「矩阵已实现」只是文档里的一句话。判据词取自各分支实际渲染的文案。
+    console.log('\n[8] 静态页面与终端矩阵（**只证明资源在位**）');
+    // 注意本格的证明力边界：demo 的收银页是在**浏览器侧**按 terminal/channel
+    // 分派的，服务端对 /cashier/preview 一律返回同一份 HTML，六个分支的文案
+    // 都在这一份里。所以下面只证明「六个分支的判据文案确实在页面里」，**不构成
+    // 「分派正确」的证据**（把分派钉死成任意一格，本格依然全绿）。分派行为请用
+    // 浏览器打开预览页逐格切换真看，矩阵口径见 docs/06。
     for (const [name, needle] of [
       ['/cashier/preview?terminal=pc&channel=alipay', '请使用支付宝扫一扫完成付款'],
       ['/cashier/preview?terminal=pc&channel=wechat', '请使用微信扫码，在微信中完成支付'],
@@ -168,8 +171,32 @@ async function main() {
       ['/cashier/preview?terminal=wechat-in&channel=wechat', '正在调起支付面板'],
     ]) {
       const page = await http(port, 'GET', name);
-      check(`收银页形态：${name}`, page.status === 200 && page.text.includes(needle));
+      check(`预览页分支文案在位：${name}`, page.status === 200 && page.text.includes(needle));
     }
+
+    console.log('\n[9] 事件体与生产同形（关闭单金额恒 0、退款事件带 outRefundNo）');
+    const eventSnapshot = (await state(port)).json;
+    const events = eventSnapshot.events || [];
+    const closedEvent = events.find((event) => event.eventType === 'PAYMENT_CLOSED');
+    if (closedEvent) {
+      check('关闭事件 eventAmountFen 恒为 0', closedEvent.eventAmountFen === 0,
+        `实际 ${closedEvent.eventAmountFen}`);
+      check('关闭事件 reason 回带真实关闭原因', closedEvent.reason === 'MERCHANT_CLOSED',
+        `实际 ${String(closedEvent.reason)}`);
+    } else {
+      check('关闭事件存在', false, '未捕获到 PAYMENT_CLOSED');
+    }
+    const refundEvent = events.find((event) => event.eventType === 'REFUND_SUCCEEDED');
+    if (refundEvent) {
+      check('退款事件带 outRefundNo', typeof refundEvent.outRefundNo === 'string' && refundEvent.outRefundNo.length > 0,
+        `实际 ${String(refundEvent.outRefundNo)}`);
+      check('退款事件 status 是退款状态', refundEvent.status === 'SUCCEEDED', `实际 ${refundEvent.status}`);
+    } else {
+      check('退款事件存在', false, '未捕获到 REFUND_SUCCEEDED');
+    }
+    check('事件 stateVersion 恒为 0（与生产同形）',
+      events.length > 0 && events.every((event) => event.stateVersion === 0),
+      `实际 ${events.map((event) => event.stateVersion).join(',')}`);
 
     if (failures.length) {
       console.log(`\n[FAIL] demo 冒烟 ${failures.length} 项未通过：`);

@@ -74,7 +74,7 @@ X-XD-Sign: <Base64 签名值>
   "expireAt": "2026-09-26T12:34:56.000Z",
   "payUrl": "https://<平台收银页地址>/cashier/<token>",
   "qrCode": "https://qr.alipay.com/bax0example000000000000",
-  "payUrlExpireHint": 1758889488,
+  "payUrlExpireHint": 1790426096,
   "feeProjection": {
     "ruleVersion": "<生效配置版本>",
     "tier": "STANDARD",

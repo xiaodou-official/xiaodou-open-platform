@@ -41,7 +41,7 @@ XD-Signature-v1
 | `TIMESTAMP` | 秒级 epoch（强校验时间窗，服务器需 NTP 对时） |
 | `NONCE` | 一次性随机串；**同一 nonce 复用会被判重放**（16–64 位可见 ASCII，详见 [API 参考 · 请求头](./03-api-reference.md)） |
 | `APP_ID` / `KEY_ID` / `REQUEST_ID` | 与请求头**逐字一致**；三者与 `NONCE`、`TIMESTAMP`、`SIGN` 的长度与字符集约束见 [API 参考 · 请求头](./03-api-reference.md)（越界与缺失返回同一个 `400`，错误体不指出是哪一头；唯一例外：同名头重复会在 message 里点名该头） |
-| `CONTENT_TYPE` | **小写**并**去掉 `;` 参数**（如 `application/json; charset=utf-8` → `application/json`） |
+| `CONTENT_TYPE` | **小写**并**去掉 `;` 参数**（如 `application/json; charset=utf-8` → `application/json`）；**没有带这个头时该行为空行**（`GET` 且无请求体就是这种情况）——**不要**想当然写 `application/json`，那是另一个值，会得到 401 |
 | `SHA256_HEX(rawBody)` | 对**原始请求体字节**做 SHA-256，小写十六进制；无请求体时为空串的哈希 |
 
 > 编码差异**不会**被平台「帮你归一」：任何编码不同都表现为不同的规范路径/查询 → 签名不符。先用 [`examples/`](../examples/) 里的参考实现跑通，再改。
@@ -91,7 +91,10 @@ XD-Response-v1
 
 - 商家 API 校验**来源 IP**：出口 IP 需在门户白名单内。
 - 判定口径：平台看的是**边缘节点实际观测到的对端地址**（不是你机器上 `ifconfig` 看到的地址）。多出口 / NAT / 自建代理的场景下，请以**实际发起连接的那个出口**为准，并把**全部**可能出口（含灾备）都加进白名单。
-- 该 `403` **不回显平台观测到的地址**（防探测），只给 `appId`；自检方法：用生产出口发一笔**最小合法请求**（例如查一笔不存在的订单），拿到 `403` 说明白名单没覆盖这个出口，拿到 `404` 说明来源已通过。
+- 这个 `403` **不回显平台观测到的地址**（防探测）。它有**两条腿**，处置方式**不一样**：
+  1. **平台边缘腿**（请求还没进到你的应用就被判掉）：信封另带 `details.reason`，取值只有七种——`PEER_NOT_TRUSTED`（对端不是平台边缘，例如绕开边缘直连）、`FORWARDED_HEADER_PRESENT` / `XFF_MISSING` / `XFF_CHAIN_ABNORMAL` / `XFF_LAST_INVALID` / `REAL_IP_MISSING` / `HEADER_CONFLICT`（转发链形态不符）。**这几种加白名单解决不了**，属于你的出口路径或平台侧部署问题：带 `requestId` 与出口 IP 走官网反馈渠道。
+  2. **应用白名单腿**：你的出口 IP 不在门户白名单内。信封只有 `code`/`message`/`requestId` 三个字段（**没有** `details`），处置=把该出口加进白名单（灾备 / 多可用区出口都要加）。
+- 自检方法：用生产出口发一笔**最小合法请求**（例如查一笔不存在的订单），拿到 `403` 说明来源没过，拿到 `404` 说明来源已通过。
 - ❌ 不要把请求从不受控的代理/办公网出口发出；来源判定失败一律 `403`，且**不会**因为签名正确而放行。
 
 ## 8. 遇到拒绝时的正确反应
@@ -100,8 +103,10 @@ XD-Response-v1
 | --- | --- | --- |
 | `403 SOURCE_IP_REJECTED` | 换代理/换出口硬试 | 把出口 IP 加进门户白名单 |
 | `422 CHANNEL_UNAVAILABLE` | 反复重试/换通道刷 | 按 [错误码与排障](./04-errors-and-troubleshooting.md) 判断是否为未放行通道，走官网反馈 |
-| `429 RATE_LIMITED` | 紧循环重试 | 指数退避 + 复用 `requestId` |
+| `429 RATE_LIMITED` | 紧循环重试 | 指数退避 + 复用 `requestId`（额度窗口见响应头 `RateLimit-*` / `Retry-After`） |
 | `503 GUARD_UNAVAILABLE` | 改换路径绕过 | 退避重试；`503` 是**安全地拒绝**，绕不过也不该绕 |
+
+> 本表用**简写**便于阅读；信封里的 `code` 一律是**全名**（带 `OPEN_API_` 前缀），逐字以 [错误码与排障](./04-errors-and-troubleshooting.md) 的总表为准。按本表字面去比对 `code` 永远匹配不上。
 
 ## 9. 泄露应急
 
