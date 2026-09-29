@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | `OPEN_API_HEADER_INVALID` | 400 | 六头缺失/重复/形态非法（**含 `Content-Type` 不是 `application/json`**）：按各头长度/字符集补全 |
 | `OPEN_API_SIGNATURE_INVALID` | 401 | 验签失败（中性）：核对规范串、时间窗、nonce 唯一性、kid |
-| `OPEN_API_SOURCE_IP_REJECTED` | 403 | 出口 IP 判定失败。**两条腿**：① 平台边缘腿——信封带 `details.reason`（`PEER_NOT_TRUSTED`/`XFF_MISSING` 等七种），**加白名单无效**，走官网反馈；② 应用白名单腿——三字段信封，把出口加进门户白名单（含灾备）。判定的是**平台边缘观测到的对端地址**，不是本机 `ifconfig` 看到的 |
+| `OPEN_API_SOURCE_IP_REJECTED` | 403 | 出口 IP 判定失败。**两条腿**：① 平台边缘腿——信封带 `details.reason`（`PEER_NOT_TRUSTED`/`XFF_MISSING` 等七种），**加白名单无效**，走官网反馈；② 应用白名单腿——三字段信封，把出口加进门户白名单（含灾备）；你已自助关闭来源校验时不会出现这条腿。判定的是**平台边缘观测到的对端地址**，不是本机 `ifconfig` 看到的 |
 | `OPEN_API_RISK_FROZEN` | 403 | 应用被风控冻结：新增下单/尝试被拒，存量不受影响 |
 | `OPEN_API_APP_SUSPENDED` | 403 | 应用被暂停：**实际拿到的是 `401`**（应用非 ACTIVE 时密钥解析在鉴权阶段就中性失败，防枚举）——商家 API **全部**打不通，存量订单的查询/关单/退款同样打不通，转平台人工通道 |
 | `OPEN_API_APP_REVOKED` | 403 | 应用被吊销（永久终态）：**实际拿到的是 `401`**（同上，防枚举），全部不可用 |
