@@ -58,6 +58,10 @@
 > **想直接开店卖货（不用写代码）**：小豆集市的产品说明也在公开仓，**同样不用注册就能看** ——
 > [GitHub](https://github.com/xiaodou-official/xiaodou-market) ｜ [Gitee 镜像](https://gitee.com/lu-wulei/xiaodou-market)
 
+> **手机端是第三条线**：小豆 App 的移动端产品说明（聊天与群组、群组管理、卖家客户管理、
+> 小豆集市交易与售后边界）也在公开仓，**照样不用注册** ——
+> [GitHub](https://github.com/xiaodou-official/xiaodou-app) ｜ [Gitee 镜像](https://gitee.com/lu-wulei/xiaodou-app)
+
 ## 接口一览
 
 **六个接口**（路径拼在平台给你的 `<BASE_URL>` 后面，主版本 `v1`，版本内只加不改）：
