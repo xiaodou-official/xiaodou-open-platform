@@ -164,7 +164,7 @@
     "publicRelease": {
       "status": "DELIVERED",
       "path": "releases/v1.0.0.md",
-      "note": "公开仓 github.com/xiaodou-official/xiaodou-open-platform 与 Gitee 镜像 gitee.com/lu-wulei/xiaodou-open-platform（单树快照推送=git commit-tree HEAD:open-platform，同一快照 SHA 两侧逐字一致；tag v1.0.0 指向首发内容树、版本内资料修订随 main 滚动）。2026-09-28 两批：资料修订重推批（响应验签参考实现、开通申请判据简化、域名口径定稿）+ 本批（README 增补指向姊妹公开仓 `xiaodou-market` 的链接，补上站外可发现路径）。"
+      "note": "公开仓 github.com/xiaodou-official/xiaodou-open-platform 与 Gitee 镜像 gitee.com/lu-wulei/xiaodou-open-platform（单树快照推送=git commit-tree HEAD:open-platform，同一快照 SHA 两侧逐字一致；tag v1.0.0 指向首发内容树、版本内资料修订随 main 滚动）。2026-09-28 两批：资料修订重推批（响应验签参考实现、开通申请判据简化、域名口径定稿）+ README 增补指向姊妹公开仓 `xiaodou-market` 的链接。2026-09-29 两批：① README 增补指向 `xiaodou-app` 的链接（三仓两两互链）；② `llms.txt` 增补「同一运营主体的其他产品线」段与**新用户福利口径**（四处公开面逐字同源，产品负责人 2026-09-29 拍板）。"
     }
   }
 }

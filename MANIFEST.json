@@ -17,8 +17,8 @@
     "public-repo",
     "portal-download"
   ],
-  "generatedAt": "2026-09-29T07:26:07.183Z",
-  "contentHash": "f82c1552d814a46e0c8c74c0eb1f9bd06cc09c41e87c74d57c5ac30022c49b3b",
+  "generatedAt": "2026-09-29T08:11:11.810Z",
+  "contentHash": "a675aa736bab1c11675bcaa67d7b6076ecc94099e3e3a4aa0a194bd4227d069c",
   "docs": [
     {
       "docId": "XD-OP-01",
@@ -86,7 +86,7 @@
     {
       "docId": "XD-OP-10",
       "path": "docs/10-changelog.md",
-      "sha256": "369a87cb8eac19e7b5650279e58a653ffbde25115c45c16ff3113eddb376f984",
+      "sha256": "8e1760629ada0597780123cc281e63a8b74c200de84db9ca5b6864560d2f3032",
       "version": "1.0.0",
       "status": "PUBLISHED"
     },
@@ -113,7 +113,7 @@
   "releases": [
     {
       "version": "1.0.0",
-      "contentHash": "f82c1552d814a46e0c8c74c0eb1f9bd06cc09c41e87c74d57c5ac30022c49b3b",
+      "contentHash": "a675aa736bab1c11675bcaa67d7b6076ecc94099e3e3a4aa0a194bd4227d069c",
       "publishedAt": "2026-09-28T10:06:55Z",
       "impact": "新增支付宝官方收款码下发（qrCode）、收银页终端分端拉起、微信内免手点、手机微信外推荐路径",
       "migration": "无需迁移（只增不改）：qrCode 为可选新字段；收银页行为变化只影响买家侧体验，商家服务端无需改动",
@@ -134,7 +134,7 @@
         "publicRelease": {
           "status": "DELIVERED",
           "path": "releases/v1.0.0.md",
-          "note": "公开仓 github.com/xiaodou-official/xiaodou-open-platform 与 Gitee 镜像 gitee.com/lu-wulei/xiaodou-open-platform（单树快照推送=git commit-tree HEAD:open-platform，同一快照 SHA 两侧逐字一致；tag v1.0.0 指向首发内容树、版本内资料修订随 main 滚动）。2026-09-28 两批：资料修订重推批（响应验签参考实现、开通申请判据简化、域名口径定稿）+ README 增补指向姊妹公开仓 `xiaodou-market` 的链接。2026-09-29 批：README 增补指向 `xiaodou-app` 的链接，补上第三仓的站外可发现路径（三仓两两互链，GitHub + Gitee 镜像各一条）。"
+          "note": "公开仓 github.com/xiaodou-official/xiaodou-open-platform 与 Gitee 镜像 gitee.com/lu-wulei/xiaodou-open-platform（单树快照推送=git commit-tree HEAD:open-platform，同一快照 SHA 两侧逐字一致；tag v1.0.0 指向首发内容树、版本内资料修订随 main 滚动）。2026-09-28 两批：资料修订重推批（响应验签参考实现、开通申请判据简化、域名口径定稿）+ README 增补指向姊妹公开仓 `xiaodou-market` 的链接。2026-09-29 两批：① README 增补指向 `xiaodou-app` 的链接（三仓两两互链）；② `llms.txt` 增补「同一运营主体的其他产品线」段与**新用户福利口径**（四处公开面逐字同源，产品负责人 2026-09-29 拍板）。"
         }
       }
     }
@@ -156,7 +156,7 @@
         "docs/11-go-live-checklist.md",
         "docs/12-credential-key-management.md"
       ],
-      "contentHash": "06f8ffb1cf926ea89ccbbee8a74e9371b3a7c90b1ba8cb2376af64a0a00027df"
+      "contentHash": "470a11bdcfda64d1c67ad24cdc65c5e0d5fc24c16e05eab48bf812293c338b6c"
     },
     "skill": {
       "files": [
