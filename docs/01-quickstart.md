@@ -113,7 +113,7 @@ X-XD-Sign: <Base64 签名值>
 
 **收银页打开、收银页回跳、用户点击完成都不是支付终态。** 终态只有两条来源：
 
-1. **事件通知**（推荐）：在门户「应用配置变更」里配置 `notifyUrl`（需审核通过后生效，前置条件见 [webhook 验签](./05-webhook-verification.md)），平台会把 `PAYMENT_SUCCEEDED` 等事件推给你的服务器，用平台公钥验签后按 `eventId` 去重落账。
+1. **事件通知**（推荐）：在门户「应用配置变更」里配置 `notifyUrl`（平台自动校验、**提交即生效**，前置条件见 [webhook 验签](./05-webhook-verification.md)），平台会把 `PAYMENT_SUCCEEDED` 等事件推给你的服务器，用平台公钥验签后按 `eventId` 去重落账。
 2. **主动查单**：`GET <BASE_URL>/api/open/v1/payments/{outTradeNo}`（本地权威读，零外部外呼）。
 
 两条路径都要接：事件是主路径，查单是对账与补偿路径。
