@@ -205,7 +205,7 @@ if (PHP_SAPI === 'cli' && realpath($argv[0] ?? '') === realpath(__FILE__)) {
     }
     $result = xd_build_signed_headers(
         getenv('XD_APP_ID') ?: 'xdop_example000000000',
-        getenv('XD_KEY_ID') ?: 'kid_example',
+        getenv('XD_KEY_ID') ?: 'mkid_xxxxxxxxxxxxxxxx',
         $privateKeyPem,
         $method,
         $url,

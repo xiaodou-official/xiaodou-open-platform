@@ -182,7 +182,7 @@ if __name__ == "__main__":
         sys.exit(1)
     result = build_signed_headers(
         os.environ.get("XD_APP_ID", "xdop_example000000000"),
-        os.environ.get("XD_KEY_ID", "kid_example"),
+        os.environ.get("XD_KEY_ID", "mkid_xxxxxxxxxxxxxxxx"),
         load_private_key(pem_path),
         method,
         url,

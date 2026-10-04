@@ -45,6 +45,8 @@ application/json
 954802c8e1bc119a1927d07af5c27d7c29c6d9467d8e93ccf83ebca8ef0252c7
 ```
 
+> 向量里的 `keyId`（`kid_example`）是**固定测试占位**。你的真实 `kid` 形如 `mkid_<16 位小写十六进制>`（共 21 字符），由平台在你**上传公钥时派生**并回显，也可本地派生——见 [凭证与密钥管理 · 1.1](../docs/12-credential-key-management.md)。
+
 校验命令（Node 示例，自己算一遍比对）：
 
 ```bash
@@ -72,21 +74,21 @@ console.log(s.buildSigningString({
 
 ```bash
 # Node.js
-XD_APP_ID=xdop_xxx XD_KEY_ID=kid_xxx XD_PRIVATE_KEY_PATH=./private_key.pem \
+XD_APP_ID=xdop_xxx XD_KEY_ID=mkid_xxxxxxxxxxxxxxxx XD_PRIVATE_KEY_PATH=./private_key.pem \
   node node/sign.js POST '/api/open/v1/payments?b=2&a=1' '{"outTradeNo":"T1"}'
 
 # Java
 javac java/XdSignature.java
-XD_APP_ID=xdop_xxx XD_KEY_ID=kid_xxx XD_PRIVATE_KEY_PATH=./private_key.pem \
+XD_APP_ID=xdop_xxx XD_KEY_ID=mkid_xxxxxxxxxxxxxxxx XD_PRIVATE_KEY_PATH=./private_key.pem \
   java -cp java XdSignature POST '/api/open/v1/payments?b=2&a=1' '{"outTradeNo":"T1"}'
 
 # PHP
-XD_APP_ID=xdop_xxx XD_KEY_ID=kid_xxx XD_PRIVATE_KEY_PATH=./private_key.pem \
+XD_APP_ID=xdop_xxx XD_KEY_ID=mkid_xxxxxxxxxxxxxxxx XD_PRIVATE_KEY_PATH=./private_key.pem \
   php php/xd_signature.php POST '/api/open/v1/payments?b=2&a=1' '{"outTradeNo":"T1"}'
 
 # Python
 pip install cryptography
-XD_APP_ID=xdop_xxx XD_KEY_ID=kid_xxx XD_PRIVATE_KEY_PATH=./private_key.pem \
+XD_APP_ID=xdop_xxx XD_KEY_ID=mkid_xxxxxxxxxxxxxxxx XD_PRIVATE_KEY_PATH=./private_key.pem \
   python3 python/xd_signature.py POST '/api/open/v1/payments?b=2&a=1' '{"outTradeNo":"T1"}'
 ```
 

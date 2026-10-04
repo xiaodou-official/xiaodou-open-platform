@@ -211,7 +211,7 @@ if (require.main === module) {
   }
   const result = buildSignedHeaders({
     appId: process.env.XD_APP_ID || 'xdop_example000000000',
-    keyId: process.env.XD_KEY_ID || 'kid_example',
+    keyId: process.env.XD_KEY_ID || 'mkid_xxxxxxxxxxxxxxxx',
     privateKeyPem,
     method,
     url,

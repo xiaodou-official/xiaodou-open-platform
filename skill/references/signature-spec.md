@@ -89,3 +89,5 @@ application/json
 ```
 
 能对上这一串，说明 query 排序、`Content-Type` 归一化、body 哈希三处都没写错。
+
+> 向量里的 `keyId`（`kid_example`）是**固定测试占位**；你的真实 `kid` 形如 `mkid_<16 位小写十六进制>`（共 21 字符），由平台在你上传公钥时派生并回显，也可本地派生（见 `docs/12-credential-key-management.md` 第 1.1 节）。`X-XD-Key-Id` 填平台公钥 kid 或任意字符串都会 `401`（找不到匹配公钥）。

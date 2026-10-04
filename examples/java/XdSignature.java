@@ -203,7 +203,7 @@ public final class XdSignature {
             System.exit(1);
         }
         String appId = System.getenv().getOrDefault("XD_APP_ID", "xdop_example000000000");
-        String keyId = System.getenv().getOrDefault("XD_KEY_ID", "kid_example");
+        String keyId = System.getenv().getOrDefault("XD_KEY_ID", "mkid_xxxxxxxxxxxxxxxx");
         String contentType = System.getenv().getOrDefault("XD_CONTENT_TYPE", "application/json; charset=utf-8");
         String timestamp = System.getenv().getOrDefault("XD_TIMESTAMP", String.valueOf(System.currentTimeMillis() / 1000));
         String nonce = System.getenv().getOrDefault("XD_NONCE", randomHex(24));

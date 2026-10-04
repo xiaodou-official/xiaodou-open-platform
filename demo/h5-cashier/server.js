@@ -31,7 +31,7 @@ const PORT = (() => {
 
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const APP_ID = 'xdop_demo000000000000';
-const KEY_ID = 'kid_demo_1';
+const KEY_ID = 'mkid_xxxxxxxxxxxxxxxx';
 const PLATFORM_KEY_ID = 'platform_kid_demo';
 const NOTIFY_URL = `http://127.0.0.1:${PORT}/merchant/webhook`;
 const LINKS = Object.freeze({ ALIPAY_H5: 'ALIPAY_AGGREGATION_NATIVE', WECHAT_H5: 'WECHAT_JSAPI' });

@@ -150,7 +150,7 @@ async function main() {
       'X-XD-App-Id': 'xdop_demo000000000000',
       'X-XD-Timestamp': String(Math.floor(Date.now() / 1000)),
       'X-XD-Nonce': 'deadbeefdeadbeefdeadbeef',
-      'X-XD-Key-Id': 'kid_demo_1',
+      'X-XD-Key-Id': 'mkid_xxxxxxxxxxxxxxxx',
       'X-XD-Request-Id': 'smoke-tampered-0001',
       'X-XD-Sign': 'A'.repeat(344),
     });
