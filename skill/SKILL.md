@@ -1,6 +1,6 @@
 ---
 name: xiaodou-open-platform-integration
-description: 小豆支付开放平台商家接入 Skill。用于帮助商家开发者（及其 AI 编码助手）把开放平台支付接起来：RSA2 请求签名（XD-Signature-v1）、下单/重拉起/查单/关单/退款、收银页终端能力矩阵（PC 扫码 / 手机支付宝手势主按钮 / 手机微信外推荐路径 / 微信内零点击）、平台事件通知验签（XD-Webhook-v1）与 eventId 去重、错误码排障、上线检查清单与凭证轮换。触发词：开放平台接入、商家 API、XD-Signature-v1、XD-Response-v1、XD-Webhook-v1、qrCode 渲染、payUrl 中转链、收银页分端、上线检查清单、密钥轮换。
+description: 小豆支付开放平台商家接入 Skill。用于帮助商家开发者（及其 AI 编码助手）把开放平台支付接起来：RSA2 请求签名（XD-Signature-v1）、下单/重拉起/查单/关单/退款、收银页终端能力矩阵（PC 扫码 / 手机支付宝手势主按钮 / 手机微信外推荐路径 / 微信内零点击）、平台事件通知验签（XD-Webhook-v1）与 eventId 去重、**平台响应验签（XD-Response-v1）**、错误码排障、上线检查清单与凭证轮换（含密钥标识 kid 格式与本地派生）。触发词：开放平台接入、商家 API、XD-Signature-v1、XD-Response-v1、XD-Webhook-v1、qrCode 渲染、payUrl 中转链、收银页分端、上线检查清单、密钥轮换、kid 密钥标识、公钥指纹、notifyUrl 回调地址、returnUrl 返回商家、商家小票、配置提交即生效、feeProjection 费率投影。
 ---
 
 # 小豆支付开放平台 · 商家接入 Skill
@@ -21,7 +21,7 @@ description: 小豆支付开放平台商家接入 Skill。用于帮助商家开�
 ## 铁律（先记这七条，能避免绝大多数事故）
 
 1. **签名只认规范串**：请求 11 行、响应 8 行、事件 7 行，**三套不同**，不要复用同一段拼串代码。请求与响应两侧的 `Content-Type` 都取「小写去 `;` 参数」后的值——**没带这个头时该行是空行**（`GET` 且无请求体就是这样）；**所有 `POST` 必须带 `Content-Type: application/json`**（含无请求体的重拉起/关单）。
-2. **重试复用同一个 `requestId` 与同一份请求体**（body 逐字节相同，含「不传 body」本身），**但 nonce 必须换新**；`409` 的正确动作是**查单**，不是换单号重下单。业务摘要成员见 `docs/03` §2.7——**`returnUrl` 在摘要内，改了再重试就是 `409`**。
+2. **重试复用同一个 `requestId` 与同一份请求体**（body 逐字节相同，含「不传 body」本身），**但 nonce 必须换新**；`409` 的正确动作是**查单**，不是换单号重下单。业务摘要成员见 `references/api-workflow.md` §2——**`returnUrl` 在摘要内，改了再重试就是 `409`**。
 3. **收银页打开 / 回跳 / 用户点完成都不是支付终态**；终态只认查单与经验签的事件。
 4. **`UNKNOWN` 不判死**：不重新下单、不重发退款、不提示买家失败，等事件或查单收敛。
 5. **收款材料只从响应取**：`payUrl`/`qrCode` 用原值，不拼接、不转发第三方、不进日志；查询接口两者**恒为空**，需要新码走重拉起。
@@ -44,12 +44,12 @@ description: 小豆支付开放平台商家接入 Skill。用于帮助商家开�
 
 | 资产 | 路径 | 在 Skill 包里可取到？ | 说明 |
 | --- | --- | --- | --- |
-| 四语言签名示例 | `examples/{node,java,php,python}/`（索引见 [`examples/README.md`](./examples/README.md)） | ✅ 在包内 | 与 `docs/` 同源的参考实现，含 golden 向量 |
+| 四语言签名示例 | `examples/{node,java,php,python}/`（索引见 [`examples/README.md`](./examples/README.md)） | ✅ 在包内 | 与 `docs/` 同源的参考实现：请求签名四语言 + 事件验签 / **响应验签**（Node），含 golden 向量 |
 | 人读文档（12 篇） | `docs/` | ❌ 不在包内 | 含 API 参考与终端能力矩阵；用门户「文档下载」包或公开仓的 `docs/` |
 | 本地收银 demo | `demo/h5-cashier/` | ❌ 不在包内 | 零依赖，loopback + mock，全链可跑（含负向用例）；用公开仓全量目录 |
 
 > **路径基准（别踩这个坑）**：本 Skill 有**两种落地形态**，可用路径不一样——
-> - **Skill 下载包**（门户「Skill 下载」按钮打出的 `.tar.gz`）：按登记文件集只含 `skill/**` 与 `examples/**`，**`docs/`、`demo/` 不在包内**。所以本文档与 `references/` 里所有指向 `docs/…`、`demo/…` 的引用在这个形态下**都取不到**——请如实告诉用户「人读文档要另外下载」，不要凭路径猜文件位置、更不要因此编造内容。
+> - **Skill 下载包**（门户「Skill 下载」按钮打出的 `.tar.gz`）：按登记文件集只含 `skill/**` 与 `examples/**`，**`docs/`、`demo/` 与仓库根 `README.md` 不在包内**。所以本文档、`references/` 与 `examples/README.md` 里所有指向 `docs/…`、`demo/…`、`README.md` 的引用在这个形态下**都取不到**——请如实告诉用户「人读文档要另外下载」，不要凭路径猜文件位置、更不要因此编造内容。
 > - **公开仓（完整目录）**：`skill/` 与 `examples/`、`docs/`、`demo/` 同级存在，三者都能取到。
 > - 只把 `skill/` 目录单独拷进编码助手的技能目录时，连 `examples/` 也会取不到（`skill/examples/` 里的相对引用按包根解析）；这时把 `examples/` 一并带上。
 >

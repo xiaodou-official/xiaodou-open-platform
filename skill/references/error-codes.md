@@ -2,7 +2,7 @@
 
 > 人读版：`docs/04-errors-and-troubleshooting.md`（**不在本 Skill 包内**：Skill 包只含 `skill/**` 与 `examples/**`，需要时从门户「文档下载」包或公开仓的 `docs/` 取）。
 
-失败响应**永不 2xx**，信封 `{code, message, requestId}`（唯一例外：`403 OPEN_API_SOURCE_IP_REJECTED` 另带 `details`，只含 `reason` 或 `appId`）。**判错只认 `code`**，`message` 只给人看；排障记录 `requestId`。
+失败响应**永不 2xx**，信封 `{code, message, requestId}`（另有两个码带 `details`：`403 OPEN_API_SOURCE_IP_REJECTED` 的**平台边缘腿**带 `reason`，`422 OPEN_API_LIMIT_EXCEEDED` 带**触发面**——见下表对应行）。**判错只认 `code`**，`message` 只给人看；排障记录 `requestId`。
 
 | code | HTTP | 一句话处置 |
 | --- | --- | --- |
@@ -23,12 +23,12 @@
 | `OPEN_API_CHANNEL_UNAVAILABLE` | 422 | 通道链路未放行：**正常拒绝**，不要重试刷量 |
 | `OPEN_API_CHANNEL_UNSUPPORTED` | 422 | 通道不受支持（预留词表位） |
 | `OPEN_API_SCOPE_CHANNEL_MISMATCH` | 422 | 申报交易形态与通道绑定不符 |
-| `OPEN_API_LIMIT_EXCEEDED` | 422 | 限额越界：信封带 `details.scopes`（触发面）；先关掉在途未支付订单；限额无自助查询面，需调整走官网反馈渠道（附 `requestId`） |
-| `OPEN_API_RATE_LIMITED` | 429 | 频率限流：指数退避 + 复用 `requestId` |
+| `OPEN_API_LIMIT_EXCEEDED` | 422 | 限额越界：信封带**触发面**——订单/尝试腿=`details.scopes`（数组）；**退款累计腿**=`details.scope` 单值 `REFUND_CUMULATIVE` + `outRefundNo`。先关掉在途未支付订单；限额无自助查询面，需调整走官网反馈渠道（附 `requestId`） |
+| `OPEN_API_RATE_LIMITED` | 429 | 频率限流：指数退避 + 复用 `requestId`；额度窗口见响应头 `RateLimit-*` / `Retry-After` |
 | `OPEN_API_PROVIDER_REJECTED` | 502 | 支付机构拒绝：先查单核对状态，不要原样无限重试 |
 | `OPEN_API_GUARD_UNAVAILABLE` | 503 | 平台守卫不可用（fail-closed）：退避重试，**不要绕过** |
 
-**码空间封闭**：平台侧内部故障到你这儿之前已中性化为表内 `503 OPEN_API_GUARD_UNAVAILABLE`（不会透内部码/原文）；若真收到表外码，按 `503` 语义处置并带 `requestId` + `code` 原文反馈。**`details` 只在两个码上出现**：边缘腿来源 IP 拒绝的 `reason`、限额越界的 `scopes`。单笔金额超出**合同硬上限**返回的是 `400 OPEN_API_BODY_INVALID`，不是 `422`。
+**码空间封闭**：平台侧内部故障到你这儿之前已中性化为表内 `503 OPEN_API_GUARD_UNAVAILABLE`（不会透内部码/原文）；若真收到表外码，按 `503` 语义处置并带 `requestId` + `code` 原文反馈。**`details` 只在两个码上出现**：边缘腿来源 IP 拒绝的 `reason`、限额越界的触发面（`scopes` 数组 / 退款腿单值 `scope`）。单笔金额超出**合同硬上限**返回的是 `400 OPEN_API_BODY_INVALID`，不是 `422`。
 
 ## 高频误区
 

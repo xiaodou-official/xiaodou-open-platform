@@ -33,7 +33,7 @@
 
 - 成功：`{ "requestId": "...", ...业务字段 }`
 - 失败：`{ "code": "...", "message": "...", "requestId": "..." }` —— 失败**永不**返回 2xx，`code` **只在总表内**（平台侧内部故障投影为 `503 OPEN_API_GUARD_UNAVAILABLE`，不会把内部码透给你）。
-- `details` 字段**只在两个码上出现**：① **平台边缘腿**的来源 IP 拒绝（`403 OPEN_API_SOURCE_IP_REJECTED`）带 `details.reason`（七种取值见 [安全红线 · 请求来源](./09-security-redlines.md)），**不会回显**平台观测到的地址；② **限额越界**（`OPEN_API_LIMIT_EXCEEDED`，HTTP 状态见 [错误码与排障](./04-errors-and-troubleshooting.md) 总表）带 `details.scopes`（触发面枚举，见 [费率与限额](./07-fees-and-limits.md)）。**应用白名单腿**的同一个 `403` 只有三字段。
+- `details` 字段**只在两个码上出现**：① **平台边缘腿**的来源 IP 拒绝（`403 OPEN_API_SOURCE_IP_REJECTED`）带 `details.reason`（七种取值见 [安全红线 · 请求来源](./09-security-redlines.md)），**不会回显**平台观测到的地址；② **限额越界**（`OPEN_API_LIMIT_EXCEEDED`，HTTP 状态见 [错误码与排障](./04-errors-and-troubleshooting.md) 总表）带**触发面**——订单/尝试腿=`details.scopes`（枚举见 [费率与限额](./07-fees-and-limits.md)），**退款累计腿**=`details.scope` 单值 `REFUND_CUMULATIVE` + `outRefundNo`。**应用白名单腿**的同一个 `403` 只有三字段。
 
 **通用约定**：金额整数分（`Fen`）；**带请求体的两个端点**（创建订单、创建退款）是**严格模式**——多传 schema 之外的字段直接 `400`；其余端点（重拉起、查单、关单、退款查询）**不接受请求体**，带了也不会被解析（不要指望它报错）。错误码只取 [错误码与排障](./04-errors-and-troubleshooting.md) 的总表。**任何端点**都可能返回 `413`（请求体超过流式上限）；平台侧内部故障一律投影为 **`503 OPEN_API_GUARD_UNAVAILABLE`**（不会出现表外码，也不会有 `500`）；请求列字段约束见 [§2.7](#27-请求字段约束创建订单--创建退款)。
 

@@ -6,6 +6,7 @@
 | --- | --- | --- |
 | Node.js 请求签名 | [`../../examples/node/sign.js`](../../examples/node/sign.js) | 规范串 + 六头签名（零依赖） |
 | Node.js 事件验签 | [`../../examples/node/verify_webhook.js`](../../examples/node/verify_webhook.js) | `XD-Webhook-v1` 验签 + `eventId` 去重骨架 |
+| Node.js 响应验签 | [`../../examples/node/verify_response.js`](../../examples/node/verify_response.js) | `XD-Response-v1` 验签（四头齐备才验；`--golden` 自检不需要密钥） |
 | Java 请求签名 | [`../../examples/java/XdSignature.java`](../../examples/java/XdSignature.java) | JDK 17+ 标准库 |
 | PHP 请求签名 | [`../../examples/php/xd_signature.php`](../../examples/php/xd_signature.php) | PHP 8+ openssl |
 | Python 请求签名 | [`../../examples/python/xd_signature.py`](../../examples/python/xd_signature.py) | `cryptography` |
