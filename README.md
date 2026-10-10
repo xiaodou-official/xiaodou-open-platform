@@ -63,9 +63,8 @@
 > **想直接开店卖货（不用写代码）**：小豆集市的产品说明也在公开仓，**同样不用注册就能看** ——
 > [GitHub](https://github.com/xiaodou-official/xiaodou-market) ｜ [Gitee 镜像](https://gitee.com/lu-wulei/xiaodou-market)
 
-> **手机端是第三条线**：小豆 App 的移动端产品说明（聊天与群组、群组管理、卖家客户管理、
-> 小豆集市交易与售后边界）也在公开仓，**照样不用注册** ——
-> [GitHub](https://github.com/xiaodou-official/xiaodou-app) ｜ [Gitee 镜像](https://gitee.com/lu-wulei/xiaodou-app)
+> **卖家在手机上管店**：用微信小程序「小豆集市」——卖家的手机经营台（看商品 / 订单 / 结算；
+> 上货、进件与售后办理仍在网页端）。买家侧在 <https://xdjishi.cn/>，全程免注册。
 
 ## 接口一览
 
