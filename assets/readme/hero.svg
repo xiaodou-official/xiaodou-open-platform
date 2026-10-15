@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" role="img" aria-labelledby="hero-title hero-desc">
+  <title id="hero-title">小豆支付开放平台 · 支付接入资料</title>
+  <desc id="hero-desc">标题：小豆支付开放平台。要点：支付宝与微信聚合收款、持牌机构清算、个人也能申请；七个接口；三套签名；兼容易支付与彩虹支付类插件协议。右侧为七个接口清单。</desc>
+  <defs>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M24 0 H0 V24" fill="none" stroke="#22415F" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="360" fill="#0E1B2A"/>
+  <rect width="1200" height="360" fill="url(#grid)" opacity="0.55"/>
+  <rect x="1" y="1" width="1198" height="358" fill="none" stroke="#2C5679" stroke-width="2"/>
+
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif">
+    <text x="56" y="88" font-size="20" letter-spacing="3" fill="#C98A5B">OPEN PLATFORM · 支付接入资料</text>
+    <text x="56" y="168" font-size="54" font-weight="700" fill="#F2F6FB">小豆支付开放平台</text>
+    <text x="56" y="214" font-size="22" fill="#AFC2D6">支付宝 + 微信聚合收款 · 持牌机构清算 · 个人也能申请</text>
+
+    <g font-size="20" fill="#E8F0F8">
+      <rect x="56" y="252" width="168" height="44" rx="4" fill="#132A3F" stroke="#2C5679"/>
+      <text x="80" y="281">七个接口</text>
+      <rect x="240" y="252" width="168" height="44" rx="4" fill="#132A3F" stroke="#2C5679"/>
+      <text x="264" y="281">三套签名</text>
+      <rect x="424" y="252" width="330" height="44" rx="4" fill="#132A3F" stroke="#2C5679"/>
+      <text x="448" y="281">易支付 / 彩虹支付兼容</text>
+    </g>
+
+    <rect x="800" y="48" width="344" height="264" rx="4" fill="#102336" stroke="#2C5679"/>
+    <text x="828" y="84" font-size="20" letter-spacing="2" fill="#C98A5B">签名 API · 七个接口</text>
+
+    <g font-size="19" fill="#D7E3EF">
+      <circle cx="836" cy="112" r="3" fill="#C98A5B"/><text x="856" y="118">01 下单</text>
+      <circle cx="836" cy="142" r="3" fill="#C98A5B"/><text x="856" y="148">02 重拉起</text>
+      <circle cx="836" cy="172" r="3" fill="#C98A5B"/><text x="856" y="178">03 查单</text>
+      <circle cx="836" cy="202" r="3" fill="#C98A5B"/><text x="856" y="208">04 关单</text>
+      <circle cx="836" cy="232" r="3" fill="#C98A5B"/><text x="856" y="238">05 退款</text>
+      <circle cx="836" cy="262" r="3" fill="#C98A5B"/><text x="856" y="268">06 退款查询</text>
+      <circle cx="836" cy="292" r="3" fill="#C98A5B"/><text x="856" y="298">07 查到账账号</text>
+    </g>
+  </g>
+</svg>
