@@ -1,6 +1,6 @@
 ---
 name: xiaodou-open-platform-integration
-description: 小豆支付开放平台商家接入 Skill。用于帮助商家开发者（及其 AI 编码助手）把开放平台支付接起来：RSA2 请求签名（XD-Signature-v1）、下单/重拉起/查单/关单/退款、收银页终端能力矩阵（PC 扫码 / 手机支付宝手势主按钮 / 手机微信外推荐路径 / 微信内零点击）、平台事件通知验签（XD-Webhook-v1）与 eventId 去重、**平台响应验签（XD-Response-v1）**、错误码排障、上线检查清单与凭证轮换（含密钥标识 kid 格式与本地派生）。触发词：开放平台接入、商家 API、XD-Signature-v1、XD-Response-v1、XD-Webhook-v1、qrCode 渲染、payUrl 中转链、收银页分端、上线检查清单、密钥轮换、kid 密钥标识、公钥指纹、notifyUrl 回调地址、returnUrl 返回商家、商家小票、配置提交即生效、feeProjection 费率投影。
+description: 小豆支付开放平台商家接入 Skill。用于帮助商家开发者（及其 AI 编码助手）把开放平台支付接起来：RSA2 请求签名（XD-Signature-v1）、下单/重拉起/查单/关单/退款、收银页终端能力矩阵（PC 扫码 / 手机支付宝手势主按钮 / 手机微信外推荐路径 / 微信内零点击）、平台事件通知验签（XD-Webhook-v1）与 eventId 去重、**平台响应验签（XD-Response-v1）**、错误码排障、上线检查清单与凭证轮换（含密钥标识 kid 格式与本地派生）。触发词：开放平台接入、商家 API、XD-Signature-v1、XD-Response-v1、XD-Webhook-v1、qrCode 渲染、payUrl 中转链、收银页分端、多到账账号、比例分账、上线检查清单、密钥轮换、kid 密钥标识、公钥指纹、notifyUrl 回调地址、returnUrl 返回商家、商家小票、配置提交即生效、feeProjection 费率投影。
 ---
 
 # 小豆支付开放平台 · 商家接入 Skill
@@ -27,6 +27,8 @@ description: 小豆支付开放平台商家接入 Skill。用于帮助商家开�
 5. **收款材料只从响应取**：`payUrl`/`qrCode` 用原值，不拼接、不转发第三方、不进日志；查询接口两者**恒为空**，需要新码走重拉起。
 6. **事件必须用原始字节验签 + 按 `eventId` 去重**，成功才回 2xx 且 body 字节正好是 `success`。
 7. **私钥永不进浏览器、不进仓库、不进日志**；费率**不要写死进代码**：入账以每单 `feeProjection` 为准（对外统一档与手续费见仓库 `README.md`），单独约定过的费率与限额以门户「费率说明」页/平台答复为准。
+
+**能力事实（2026-10-17 口径）**：**微信 JSAPI 已开放**——仅限买家在微信内打开收银页时调起；微信外手机浏览器与商家 App 内没有「直接拉起」形态。**比例分账已支持**：`SINGLE` / `ROUND_ROBIN` / `RATIO` 三种方式，`RATIO` 为 2–4 个参与账号、配置面每项 `0 < shareBps < 10000`、合计 10000bps，`RENORMALIZE` 后单笔生效腿可只剩 1 条；查询接口只读返回 `routing.ratios` 配置快照，写面在商家后台。
 
 ## 工作流
 

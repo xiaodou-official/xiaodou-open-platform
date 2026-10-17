@@ -14,9 +14,9 @@ Base URL 由平台下发（文档里写 `<BASE_URL>`；它是**纯 host、不含
 | `POST /api/open/v1/payments/{outTradeNo}/attempts` | 重拉起 | `201` / `200`（并发赢家） | **关旧建新**，新材料同批更换；需要新码只走这里。无请求体字段，但**必须带 `Content-Type: application/json`** |
 | `GET /api/open/v1/payments/{outTradeNo}` | 查单 | `200` | **本地权威读**；`payUrl` 与 `qrCode` **恒为 null** |
 | `POST /api/open/v1/payments/{outTradeNo}/close` | 关单 | `200` | 先与支付机构确认未支付才关。`200` 回执带 `closeState`：`CLOSE_REQUESTED`（已受理）/ `ALREADY_CLOSED`（本就已关闭）/ `UNKNOWN_KEPT`（结果不确定，**维持原状不判死**）/ `PROVIDER_PAID_CONFLICT`（关单过程中发现已支付，订单转成功）；**受理前**已判已支付 → `409`（错误体**不含** `closeState`）。两条路的正确动作相同：**先查单，不要重试关单**。无请求体字段，但**必须带 `Content-Type: application/json`** |
-| `POST /api/open/v1/refunds` | 退款 | `201` / `200`（幂等重放） | 仅已支付订单；累计退款 ≤ 实付；按**下单时冻结的收款分配快照**原路回吐——**缺快照 → `409` `OPEN_API_STATE_INVALID`**（该单不能自助退款：带 `outTradeNo`/`requestId` 走官网反馈人工处置，**不要换号重试**）；被拒 `502`；不确定 `UNKNOWN` |
+| `POST /api/open/v1/refunds` | 退款 | `201` / `200`（幂等重放） | 仅已支付订单；累计退款 ≤ 实付；按**下单时冻结的收款分配快照**发起回退（实际到账路径以支付服务方原交易与分账合同为准）——**缺快照 → `409` `OPEN_API_STATE_INVALID`**（该单不能自助退款：带 `outTradeNo`/`requestId` 走官网反馈人工处置，**不要换号重试**）；被拒 `502`；不确定 `UNKNOWN` |
 | `GET /api/open/v1/refunds/{outRefundNo}` | 退款查询 | `200` | 只读本地权威状态 |
-| `GET /api/open/v1/settlement/accounts` | 查到账账号与收款分配（只读） | `200` | **只读**：到账账号列表（主体名 / 商户号 / 银行名 / 卡尾号 4 位）＋当前收款方式与勾选顺序；**设定面在商家后台**，无写参数、无请求体、无请求级幂等 |
+| `GET /api/open/v1/settlement/accounts` | 查到账账号与收款分配（只读） | `200` | **只读**：到账账号列表（主体名 / 商户号 / 银行名 / 卡尾号 4 位）＋当前收款方式与勾选顺序；`mode=RATIO` 时返回配置面 `routing.ratios`（2–4 个账号，每项 `0 < shareBps < 10000`、合计 10000bps），单笔生效腿按可用账号与 `unavailablePolicy` 决定；**设定面在商家后台**，无写参数、无请求体、无请求级幂等 |
 
 响应信封：成功 `{requestId, ...业务字段}`；失败 `{code, message, requestId}`，**永不 2xx**。
 

@@ -32,6 +32,7 @@
 | `OPEN_API_IDEMPOTENCY_CONFLICT` | 409 | 同 `outTradeNo`/`outRefundNo` 绑定了不同业务摘要。先查单，**不要换号重试**。 |
 | `OPEN_API_RESOURCE_NOT_FOUND` | 404 | 资源不存在（查无/跨应用/跨商家/引用畸形统一中性）。 |
 | `OPEN_API_STATE_INVALID` | 409 | 状态机非法迁移或终态冲突（例如对已成功订单再次关单）。 |
+| `OPEN_API_CLOSE_NOT_COMPLETED` | 409 | 关单未完成：支付机构未完成本次关单，**订单仍可能处于可支付状态**（平台不会把订单本地判死）。稍后重试关单，或等订单到期自动关闭（到期后不可支付）。**可重试**，但不要紧循环。 |
 | `OPEN_API_CHANNEL_UNAVAILABLE` | 422 | 通道存在但链路未放行（闸门关闭或前置未齐）。**可预期的正常拒绝**，不要重试刷量。 |
 | `OPEN_API_CHANNEL_UNSUPPORTED` | 422 | 通道不受支持（预留词表位）。 |
 | `OPEN_API_SCOPE_CHANNEL_MISMATCH` | 422 | 申报交易形态与通道绑定不符（含越界/双申报缺省/空申报）。 |
@@ -103,6 +104,7 @@
     "OPEN_API_LIMIT_EXCEEDED": 422,
     "OPEN_API_RATE_LIMITED": 429,
     "OPEN_API_PROVIDER_REJECTED": 502,
+    "OPEN_API_CLOSE_NOT_COMPLETED": 409,
     "OPEN_API_GUARD_UNAVAILABLE": 503
   }
 }
