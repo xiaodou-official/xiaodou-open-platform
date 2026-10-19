@@ -130,7 +130,7 @@
 | **收款码** | 下单响应里的**官方收款码** `qrCode`（只有支付宝渠道给，而且只有**下单那一次响应**里有），可以直接画在你自己的电脑网页上 |
 | **微信收款 / 支付宝收款** | 两条通道的能力面都做好了；**支付宝现在就能接**，**微信 JSAPI 已开放**——买家在微信内打开收银页即可调起微信支付（仅限微信内浏览器；微信外手机浏览器与商家 App 内没有「直接拉起」形态；桌面微信内置浏览器同样按微信内链路处理，若无法完成支付请改用手机微信打开同一链接）。其他通道或交易形态的放行仍以对接人确认为准（放行由平台整体控制、不区分应用，后台没有查询面；未放行时下单返回一个可预期的拒绝，见 [FAQ](#常见问题faq)） |
 | **虚拟发卡** / 卡密 / 自动发货 / 发卡系统 | 我们只管收钱和支付状态，**发货是你自己的系统发**；不想写代码就去[小豆集市的卖家后台](#两条路选一条) |
-| **次日到账 / 次日提现** / 自动结算到银行卡 | 付成功就当场分账，然后按设置**自动转到你绑定的银行卡**——现在是**第二天到账（含节假日）**，**不用你手动提现**（见[资金与结算](#资金与结算)） |
+| **次日中午前到账 / 无需手动提现** / 自动结算到银行卡 | 付成功就当场分账，然后按设置**自动转到你绑定的银行卡**——现在是**次日中午前到账（含节假日）**，**不用你手动提现**（见[资金与结算](#资金与结算)） |
 | **持牌机构** / 资金安全 / 资金托管 / 担保交易 | **央行持牌机构清算，安全可靠的个人和企业支付接口**。收付结算都是**有支付牌照的支付公司**做的，所以这里没有需要我们来「担保」的沉淀资金（跟[免签那类做法](#常见问题faq)的区别就在这） |
 | 独立站收款 / 私域收款 / 知识付费收款 | 你只需要在服务器上接下单和通知，**页面、商品、发货都留在你自己的系统里** |
 | 易支付 / 彩虹支付 / 码支付 这类「**免签**」系统 | **不是一回事**，钱走的路完全不一样——见 [FAQ](#常见问题faq) 里的对比。**但如果你系统里装的正是「易支付 / 彩虹支付」插件**（只会填网关 / 商家 ID / 密钥三格的那种），我们另有一条**易支付 / 彩虹支付协议兼容**接入面：不用改代码（`submit.php` / `mapi.php` / `api.php` 多种协议接口）、资金仍走持牌支付公司，见[易支付协议兼容接入](./docs/13-epay-compat-integration.md) |
@@ -145,7 +145,7 @@
 
 - **央行持牌机构清算，安全可靠的个人和企业支付接口**：付成功就按**下单时定好的分配**当场分账，我们提供的是接入、状态和对账能力。
 - **钱先进哪个账户、按什么规则分，由你的「收款分配」说了算**：可以绑定多个到账账号，单账号全额、按顺序轮流或比例分账（2–4 个参与账号，配置面每项 `0 < shareBps < 10000`、合计 10000bps）；**一单一结、随单冻结**，退款按原订单冻结的分配快照发起回退（实际到账路径以支付服务方原交易与分账合同为准）。查当前分配用 `GET /api/open/v1/settlement/accounts`，详见[到账账号与收款分配](./docs/14-settlement-accounts.md)。
-- **收付和结算都是有支付牌照的支付公司做的**，按设置**自动转到你绑定的银行卡** —— **不用你手动提现**。现在是**第二天到账**（含节假日）。
+- **收付和结算都是有支付牌照的支付公司做的**，按设置**自动转到你绑定的银行卡** —— **不用你手动提现**。现在是**次日中午前到账**（含节假日）。
 - **费率公开、全平台统一一档**：平台服务费 1.5%（商家实收 98.5%），手续费 0.01 元起。每一单响应里的 `feeProjection`（带 `ruleVersion`）就是那一单的准确口径，入账用它；如果你有单独约定过的费率，以商家后台「费率说明」页按账户实时展示为准。**限额按主体类型判定**：对公（个体工商户/企业）主体不设平台业务金额上限，实际以支付服务方额度为准；个人主体按平台默认档。具体数字不在文档里写死（没有自助查询面，越界被拒时走官网反馈渠道）。
 - **没有任何一次性收费**：入驻、开通、接入对接**全程免费**——不收搭建费、入驻费、开通费，也不另收通道费；我们会收的费用只有上一条那档按笔计的口径，没有隐藏项目。
 - 结算周期、到账时间**都会变**：**一律看后台当时显示的**；微信 JSAPI 已开放（仅微信内打开收银页），其他通道或交易形态是否放行以对接人确认为准（后台无查询面）。别抄进你的对外文案或代码常量里。
@@ -193,16 +193,16 @@ node demo/h5-cashier/smoke.js         # 冒烟自检（含负向用例），打�
 两条通道都做好了（支付宝：官方收款码 + 收银页；微信：在微信里打开页面后调起支付）。**支付宝现在就能接；微信 JSAPI 已开放**——买家在微信内打开收银页即可调起微信支付（仅限微信内浏览器；微信外手机浏览器与商家 App 内没有「直接拉起」形态）。其他通道或交易形态的放行仍由平台整体控制（不区分应用、后台没有查询面，也不要靠试探下单确认）。未放行时下单会返回 `422` `OPEN_API_CHANNEL_UNAVAILABLE`，这是**正常的、可预期的拒绝**，别当故障、更别反复重试。
 
 **钱多久到账？要手动提现吗？**
-付成功就当场分账，然后按设置**自动转到你绑定的银行卡**——**不用手动提现**。现在是**第二天到账**（含节假日）；周期和时效会随渠道和设置变，以后台「资金 / 结算」页显示的为准。
+付成功就当场分账，然后按设置**自动转到你绑定的银行卡**——**不用手动提现**。现在是**次日中午前到账**（含节假日）；周期和时效会随渠道和设置变，以后台「资金 / 结算」页显示的为准。
 
 **你们会经手或者压着我的钱吗？**
 不会。**央行持牌机构清算，安全可靠的个人和企业支付接口**：收付和结算都是有支付牌照的支付公司做的，付成功就按定好的分配当场分到各方。
 
 **你们是「易支付 / 码支付」那类系统吗？**
-不是，钱走的路完全不一样。那类叫法一般指**免签 / 第四方代收**：先用个人收款码或别人的账户把钱收进来，再转给卖家，**钱会经过中间方的账户**。我们是另一条路：**商家在有支付牌照的支付公司开自己的结算账户**，买家付完钱，钱在公司那边**当场分到各方账户**，再按设置转到你绑定的银行卡 —— **央行持牌机构清算，安全可靠的个人和企业支付接口**。你要是想要前一种，我们做不了；你要是想要「自己有正规结算账户 + 一套接口接完支付宝和微信 + 第二天自动到账」，接着往下看。
+不是，钱走的路完全不一样。那类叫法一般指**免签 / 第四方代收**：先用个人收款码或别人的账户把钱收进来，再转给卖家，**钱会经过中间方的账户**。我们是另一条路：**商家在有支付牌照的支付公司开自己的结算账户**，买家付完钱，钱在公司那边**当场分到各方账户**，再按设置转到你绑定的银行卡 —— **央行持牌机构清算，安全可靠的个人和企业支付接口**。你要是想要前一种，我们做不了；你要是想要「自己有正规结算账户 + 一套接口接完支付宝和微信 + 次日中午前到账（含节假日）」，接着往下看。
 
 **我系统里已经有「易支付 / 彩虹支付」插件，怎么切过来？**
-如果你系统里的支付插件只让你填三格——**网关地址、商家 ID、密钥**——那它用的就是这一类老式共享密钥协议，我们的「易支付接口配置」按同一套协议收单：在卖家后台上开通、把页面给的三个值填进那三格就能用，**不用改你系统的代码**。协议细节、参数与签名规则、支持范围见[易支付协议兼容接入](./docs/13-epay-compat-integration.md)。**资金路径和免签那类做法完全不同**（见上一条），这条接入面只是把**协议**对上，钱一样走持牌支付公司、进你自己的结算账户。
+如果你系统里的支付插件只让你填三格——**网关地址、商家 ID、密钥**（有的系统把网关叫「接口地址」或「支付网关」，是同一个值）——那它用的就是这一类老式共享密钥协议，我们的「易支付接口配置」按同一套协议收单：在卖家后台上开通、把页面给的三个值填进那三格就能用，**不用改你系统的代码**。注意网关**不是**「应用凭证」页的接入地址（Base URL，通常 `api.` 开头）。协议细节、参数与签名规则、支持范围见[易支付协议兼容接入](./docs/13-epay-compat-integration.md)。**资金路径和免签那类做法完全不同**（见上一条），这条接入面只是把**协议**对上，钱一样走持牌支付公司、进你自己的结算账户。
 
 **手续费多少？**
 **平台服务费 1.5%（商家实收 98.5%），全平台统一一档，手续费 0.01 元起。**每一单响应里的 `feeProjection` 就是那一单的准确口径（带 `ruleVersion`，拿它对账）；如果你有单独约定过的费率，以商家后台「费率说明」页按账户实时展示为准。限额按主体类型判定（对公主体不设平台业务金额上限，实际以支付服务方额度为准；个人主体按平台默认档），也没有自助查询面（越界被拒时走官网反馈渠道，附 `requestId`）。详见[费率与限额](./docs/07-fees-and-limits.md)。
@@ -227,6 +227,19 @@ node demo/h5-cashier/smoke.js         # 冒烟自检（含负向用例），打�
 
 **密钥怎么轮换？**
 我们用同一把 RSA2 密钥给响应和事件签名，公钥和指纹在文档页和后台**两处都公开**（你可以自己算一遍指纹核对）。你自己的签名密钥可以自己换；我们这边换钥会同时发布新的 `kid` 和新公钥，新旧并存期间按 `kid` 选公钥。**紧急吊销不受宽限影响**，宽限窗最长 72 小时。详见[凭证与密钥管理](./docs/12-credential-key-management.md)。
+
+## English
+
+Xiaodou Open Platform (小豆支付开放平台) is a server-to-server payment API for merchants that already run their own system in mainland China. It accepts Alipay and WeChat Pay, returns signed webhook events for payment status, and settles funds through a licensed payment company into the merchant's own account.
+
+- Eligibility: mainland China only. Individuals can apply with a Chinese resident ID card and a bank card issued in mainland China; no business license is required. Onboarding is manually reviewed and is not instant. Overseas entities cannot open an account directly.
+- Payment methods: Alipay and WeChat Pay. Inside Alipay you may choose Huabei or a credit card; inside WeChat Pay you may use a credit card, subject to what the cashier displays. These are payment tools inside the cashier, not separate channels.
+- Fees: A 1.5% platform fee applies only to successful online payments; merchants keep 98.5%; fees start at CNY 0.01. Onboarding, activation and integration support are free.
+- Payout: funds are split when the payment succeeds and automatically settled to the bank card bound to your account before noon the next day, including holidays. There is no manual withdrawal button.
+- Boundaries: the platform only collects money and reports payment status; delivery, provisioning and shipping remain in your own system. No sandbox, test application or callback simulator is provided. WeChat JSAPI works only inside the WeChat browser.
+- English pages: <https://xdfair.cn/en/> · <https://xdfair.cn/en/individual/> · <https://xdfair.cn/en/compatibility/epay/>
+
+Use with Claude Code / Codex / Cursor / Copilot: point the assistant at [`skill/SKILL.md`](./skill/SKILL.md) and [`examples/`](./examples/); the skill is content, not an SDK.
 
 ## 目录结构
 

@@ -19,7 +19,7 @@
 
 - 七个接口：下单、重新拉支付、查单、关单、发起退款、查退款、查到账账号与收款分配（只读）（主版本 `v1`，版本内只加不改）。
 - **多到账账号与收款分配**：一个商家可绑定多个到账账号，收款方式有 `SINGLE`（单账号全额）、`ROUND_ROBIN`（按顺序轮流）与 `RATIO`（**比例分账**）三种；比例分账为 2–4 个参与账号，配置面每项 `0 < shareBps < 10000`、合计 10000bps，`RENORMALIZE` 后单笔生效腿可只剩 1 条。查当前分配用 `GET /api/open/v1/settlement/accounts`（只读，返回 `routing.ratios` 配置快照）；写面在商家后台。
-- **易支付 / 彩虹支付协议兼容**接入面：系统里已装「易支付 / 彩虹支付」类插件（只填网关地址 / 商家 ID / 密钥三格的那种）的商家**不用改代码**——在卖家后台开通后把三个值填进插件即可；**兼容该协议的多种接口**：`submit.php`（表单收单）/ `mapi.php`（程序化收单）/ `api.php`（查询）。
+- **易支付 / 彩虹支付协议兼容**接入面：系统里已装「易支付 / 彩虹支付」类插件（只填网关地址 / 商家 ID / 密钥三格的那种；有的系统把网关叫「接口地址」）的商家**不用改代码**——在卖家后台开通后把三个值填进插件即可；**兼容该协议的多种接口**：`submit.php`（表单收单）/ `mapi.php`（程序化收单）/ `api.php`（查询）。网关不是开放平台 API 的「接入地址（Base URL）」（通常 `api.` 开头），只填「易支付接口配置」页展示的值。
 - 三套签名：请求、响应、通知各一套，拼串规则不同；本仓提供多语言签名示例与本地演示。
 - 付款成功的唯一判据：**只有查单结果、或验过签的通知**才算；
   收银页打开、跳回来、买家点「已完成支付」都不算。
@@ -51,6 +51,18 @@
 - 运营主体：宇智人工智能（深圳）有限公司。
 - 公司具有 ICP 许可证和 EDI 许可证（增值电信业务经营许可证，粤B2-20252807）。
 - 与汇付等持牌支付机构合作：收款、分账、结算均由持牌支付机构完成。
+
+## English
+
+- Definition: Xiaodou Open Platform (小豆支付开放平台) is a server-to-server payment API for merchants that already run their own system in mainland China. It accepts Alipay and WeChat Pay, returns signed webhook events for payment status, and settles funds through a licensed payment company into the merchant's own account.
+- Service area: Mainland China only.
+- Eligibility: Individuals can apply with a Chinese resident ID card and a bank card issued in mainland China; no business license is required. Sole proprietors and companies apply with their business license and settlement materials. Onboarding is manually reviewed and is not instant. Overseas entities cannot open an account directly.
+- Payment methods: Alipay and WeChat Pay. Inside Alipay you may choose Huabei or a credit card; inside WeChat Pay you may use a credit card, subject to what the cashier displays. These are payment tools inside the cashier, not separate channels.
+- Fees: A 1.5% platform fee applies only to successful online payments; merchants keep 98.5%; fees start at CNY 0.01. Onboarding, activation and integration support are free.
+- Payout: before noon the next day, including holidays; no manual withdrawal button.
+- Boundaries: no delivery, no sandbox, WeChat JSAPI only inside WeChat, not a worldwide offering.
+- AI coding assistants: point the assistant at `skill/SKILL.md` and `examples/`; the skill is content, not an SDK.
+- English pages: <https://xdfair.cn/en/> · <https://xdfair.cn/en/individual/> · <https://xdfair.cn/en/compatibility/epay/>
 
 ## 本仓内容
 
