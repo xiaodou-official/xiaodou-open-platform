@@ -1,4 +1,4 @@
-# 小豆支付开放平台 · 虚拟发卡 / 数字商品的支付接入资料（支付宝 + 微信聚合收款 · 持牌机构清算）
+# 小豆支付开放平台 · 个人支付接口与虚拟发卡 / 数字商品接入资料（支付宝 + 微信聚合收款 · 持牌机构清算）
 
 <p align="center">
   <img src="./assets/readme/hero.svg" width="880" alt="小豆支付开放平台：支付宝与微信聚合收款接口；七个接口、三套签名、兼容易支付与彩虹支付类插件协议">
@@ -14,7 +14,7 @@
 
 **你已经有一套卖虚拟商品的系统，只缺「收钱」这一环？** 卡密、激活码、课程、专栏、电子书、软件、素材模板、会员权益、游戏道具——**凡是线上交付的数字商品**都能用它收款；**当面交易的实物**也可以。
 
-**没有营业执照也没关系——个人就能申请。** 主体类型选「个人」：一张身份证 + 一张本人银行卡，跟着向导走完入驻，手续极简；个体工商户与企业同样支持。
+**没有营业执照也没关系——个人就能申请。** 主体类型选「个人」：一张身份证 + 一张本人银行卡，跟着向导走完入驻，手续极简；个体工商户与企业同样支持。**个人网站、个人开发者、个人用户都是同一套接口**：网站只需要在服务器端调用接口，页面、商品和发货留在你自己的系统里。
 
 这套接口就是干这个的：帮你把**支付宝和微信**收进来，告诉你「钱到没到」，再把钱结给你。下单、查单、关单、退款，外加一个只读的「查到账账号与收款分配」——一共七个接口。
 
@@ -76,6 +76,18 @@
 > **卖家在手机上管店**：用微信小程序「小豆集市」——卖家的手机经营台（看商品 / 订单 / 结算；
 > 上货、进件与售后办理仍在网页端）。买家侧在 <https://xdjishi.cn/>，全程免注册。
 
+## 个人网站如何接入支付宝 / 微信支付？
+
+个人网站不需要企业资质，也不需要改成商城：网站只在**服务器端**调用接口，页面、商品、发货和售后都留在你自己的网站。个人开发者、个人用户与个人网站走的是同一条链，接口与个体工商户 / 企业完全一致。
+
+1. **完成商户进件**：主体类型选「个人」，身份证 + 本人银行卡，按五步向导提交审核（见[怎么开通](#常见问题faq)）。
+2. **申请开放平台应用**：拿到 `appId` / `kid`，登记 RSA2 公钥、服务器出口 IP 白名单和 `notifyUrl`。
+3. **服务器端下单**：调用下单接口，拿 `payUrl`（收银页）或支付宝官方收款码 `qrCode`；把收款码画在你自己的网页上，或把 `payUrl` 生成二维码 / `302` 跳转。
+4. **接收并验签通知**：按 `XD-Webhook-v1` 用原始字节验签，按 `eventId` 去重，更新你自己的订单库。
+5. **上线自检**：付款是否成功只认查单结果或验过签的通知；按[上线检查清单](./docs/11-go-live-checklist.md)逐条核对，再跑一笔小额真实订单。
+
+第一次接入建议从[五分钟上手](./docs/01-quickstart.md)开始；接口参数见[API 参考](./docs/03-api-reference.md)。
+
 ## 接口一览
 
 **七个接口**（路径拼在平台给你的 `<BASE_URL>` 后面，主版本 `v1`，版本内只加不改）：
@@ -109,7 +121,9 @@
 | --- | --- |
 | 支付平台 / 聚合支付 / **聚合收款** / 聚合码支付 | 一套接口同时接**支付宝和微信**两条通道（`ALIPAY_H5` / `WECHAT_H5`），通道在**下单那一刻定死**；我们聚合的是**接入、状态和对账**，钱的收付结算是持牌支付公司做的 |
 | **支付接口** / 支付 API / 云支付 | 就这七个：建单、重拉、查单、关单、退款、查退款、查到账账号与收款分配（见[接口一览](#接口一览)） |
-| **个人支付** / **个人收款** / 个人开发者收款 | **个人可以申请**：主体类型选「个人」，身份证 + 本人银行卡即可入驻，接口与个体工商户 / 企业完全一致（见[怎么开通](#常见问题faq)） |
+| **个人支付** / **个人收款** / **个人接入收款** / 个人开发者收款 | **个人可以申请**：主体类型选「个人」，身份证 + 本人银行卡即可入驻，接口与个体工商户 / 企业完全一致（见[怎么开通](#常见问题faq)） |
+| **个人网站接入** / **个人网站收款** / 个人用户接入支付宝微信 | 网站只在**服务器端**调用七个接口；页面、商品、发货都留在你自己的网站。个人主体进件后接口与其他主体一致（见下方「个人网站如何接入支付宝 / 微信支付」） |
+| **个人接入支付 API** / **支付接口 API** | 就是[接口一览](#接口一览)里的七个接口：下单、重拉、查单、关单、退款、查退款、查到账账号；请求签名 `XD-Signature-v1`，四语言示例在 `examples/` |
 | **收款通道** / 收款接口 / 支付通道 | 就是本仓这七个接口：一条**服务器对服务器**的收款通道，钱由持牌支付公司收付结算（见[接口一览](#接口一览)） |
 | **免费接入** / 免搭建费 / 不收入驻费 | **入驻、开通、接入对接全程免费**——没有搭建费、入驻费、开通费，也不另收通道费（见[资金与结算](#资金与结算)） |
 | **H5 支付** / H5 远程支付 | 我们的收银页（`payUrl`）：电脑扫码、手机浏览器、微信里打开，三种情况行为不一样（见[终端能力矩阵](./docs/06-cashier-integration.md)） |
@@ -125,7 +139,7 @@
 
 **English keywords（方便英文检索对上号 / so English searches can find us）**：
 
-`payment gateway API` · `aggregate payment` · `Alipay + WeChat Pay integration` · `virtual goods payment` · `card key / digital code selling` · `faka platform payment` · `merchant payment API docs` · `epay / caihong epay protocol compatible gateway (submit.php / mapi.php / api.php)` · `RSA2 request signature` · `webhook signature verification` · `payment integration examples` · `Node.js / Java / PHP / Python signature sample` · `licensed payment institution settlement` · `openapi payment China`
+`payment gateway API` · `aggregate payment` · `Alipay + WeChat Pay integration` · `virtual goods payment` · `card key / digital code selling` · `faka platform payment` · `merchant payment API docs` · `epay / caihong epay protocol compatible gateway (submit.php / mapi.php / api.php)` · `RSA2 request signature` · `webhook signature verification` · `payment integration examples` · `Node.js / Java / PHP / Python signature sample` · `licensed payment institution settlement` · `openapi payment China` · `personal website payment integration` · `individual developer payment API` · `accept payments as an individual` · `payment API without business license`
 
 ## 资金与结算
 
@@ -207,6 +221,9 @@ node demo/h5-cashier/smoke.js         # 冒烟自检（含负向用例），打�
 
 **怎么开通？个人可以申请吗？**
 **可以，个人就能申请——没有营业执照也行。** 从页首那个入口进「卖家中心 / 免费开店」→ 注册小豆账号 → 完成**商户进件**（主体类型选「个人」：上传身份证正反面、填一张本人银行卡，五步向导、手续极简；个体工商户与企业同理，另加营业执照）→ 签开放平台服务协议和经营范围合规报送同意书 → **一键申请应用**（提交后自动审）→ 拿到 `appId`、`kid`，登记你的 RSA2 公钥、配好出口 IP 白名单和 `notifyUrl`。申报域名由你自己填写，**平台不强制核验归属**——顺手做一次**域名归属验证**（DNS TXT 或者放一个回源文件，二选一）会更稳妥：域名被他人冒用申报时，验证过的归属更明确。
+
+**个人网站 / 个人开发者 / 个人用户怎么接入收款？**
+用同一个个人主体：身份证 + 本人银行卡完成进件，拿到 `appId` / `kid` 后，在**服务器端**调用下单、查单、退款和通知验签接口即可；网站前端只负责展示收款码或跳转收银页，**私钥不要放进浏览器**。接口与个体户 / 企业一致，不需要营业执照。具体步骤见上文「个人网站如何接入支付宝 / 微信支付」。
 
 **密钥怎么轮换？**
 我们用同一把 RSA2 密钥给响应和事件签名，公钥和指纹在文档页和后台**两处都公开**（你可以自己算一遍指纹核对）。你自己的签名密钥可以自己换；我们这边换钥会同时发布新的 `kid` 和新公钥，新旧并存期间按 `kid` 选公钥。**紧急吊销不受宽限影响**，宽限窗最长 72 小时。详见[凭证与密钥管理](./docs/12-credential-key-management.md)。
