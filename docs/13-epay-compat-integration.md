@@ -117,3 +117,8 @@
 如果第一笔单跳转后收银页打不开，先把**请求 URL**（可以把 `sign`、`key` 打码）和发生时间发给对接人，不要靠猜。
 
 费率与到账口径与开放平台**同一条资金链**，见[费率与限额](./07-fees-and-limits.md)；上线清单逐条自检见[上线检查清单](./11-go-live-checklist.md)。
+
+
+## 服务费承担方（add-only）
+
+易支付兼容面（`/submit.php`、`/mapi.php`、`/api.php`）**固定 `SELLER`**：`money` 始终表示买家实付，不新增字段、不改 notify。携带 `feeBearer` 或 `merchantAmountFen` 的请求会被**显式 400 拒绝**（不会静默忽略），以免商户按 BUYER 展示、平台按 SELLER 收取造成资金口径错位。需要使用买家承担能力请走原生 `/api/open/v1/payments`（2026-10-20 起已开通）。

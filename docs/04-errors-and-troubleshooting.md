@@ -36,6 +36,7 @@
 | `OPEN_API_CHANNEL_UNAVAILABLE` | 422 | 通道存在但链路未放行（闸门关闭或前置未齐）。**可预期的正常拒绝**，不要重试刷量。 |
 | `OPEN_API_CHANNEL_UNSUPPORTED` | 422 | 通道不受支持（预留词表位）。 |
 | `OPEN_API_SCOPE_CHANNEL_MISMATCH` | 422 | 申报交易形态与通道绑定不符（含越界/双申报缺省/空申报）。 |
+| `OPEN_API_FEE_BEARER_DISABLED` | 422 | 买家承担服务费未开放（灰度/回滚闸门关闭）。**只挡新 BUYER 单**；查单/退款/已有订单读取不受影响。需要该能力请关注门户公告，不要改换参数绕过。 |
 | `OPEN_API_LIMIT_EXCEEDED` | 422 | 限额越界。信封带**触发面**：订单/尝试腿=`details.scopes`（数组）；**退款累计腿**=`details.scope` 单值 `REFUND_CUMULATIVE` + `outRefundNo`——枚举与处置见 [费率与限额](./07-fees-and-limits.md)。限额值不在任何页面展示：先关掉不再支付的在途订单；需要调整走官网反馈渠道（附 `requestId`）。 |
 | `OPEN_API_RATE_LIMITED` | 429 | 频率限流越界。按响应头的窗口信息退避重试，**不要紧循环**。 |
 | `OPEN_API_PROVIDER_REJECTED` | 502 | 支付机构拒绝本次请求（平台不向外暴露内部原因）。此类失败**不要原样无限重试**，先核对业务参数。 |
@@ -102,6 +103,7 @@
     "OPEN_API_SCOPE_CHANNEL_MISMATCH": 422,
     "OPEN_API_STATE_INVALID": 409,
     "OPEN_API_LIMIT_EXCEEDED": 422,
+    "OPEN_API_FEE_BEARER_DISABLED": 422,
     "OPEN_API_RATE_LIMITED": 429,
     "OPEN_API_PROVIDER_REJECTED": 502,
     "OPEN_API_CLOSE_NOT_COMPLETED": 409,

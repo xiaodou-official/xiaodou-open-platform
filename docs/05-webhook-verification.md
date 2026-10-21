@@ -92,7 +92,9 @@ XD-Webhook-v1
 | `REFUND_SUCCEEDED` | 退款成功 |
 | `REFUND_FAILED` | 退款失败 |
 
-事件体字段：`eventId`、`eventType`、`appId`、`outTradeNo`、`outRefundNo`（可空）、`eventAmountFen`、`grossAmountFen`、`status`、`reason`（仅订单封闭词表；**支付机构内部原因永不出现在事件体**）、`occurredAt`（UTC epoch 秒）、`stateVersion`、`attach`（你下单时的附加数据原样回带，≤256 字符、首尾空白会被去掉）、`feeProjection`。
+事件体字段：`eventId`、`eventType`、`appId`、`outTradeNo`、`outRefundNo`（可空）、`eventAmountFen`、`grossAmountFen`、`feeBearer`、`merchantAmountFen`、`feeAmountFen`、`status`、`reason`（仅订单封闭词表；**支付机构内部原因永不出现在事件体**）、`occurredAt`（UTC epoch 秒）、`stateVersion`、`attach`（你下单时的附加数据原样回带，≤256 字符、首尾空白会被去掉）、`feeProjection`。
+
+`feeBearer` / `merchantAmountFen` / `feeAmountFen` 为 2026-10-19 add-only 字段：`feeBearer` 恒为 `SELLER` 或 `BUYER`；`merchantAmountFen` 是商户定价/净额、`feeAmountFen` 是平台服务费。历史事件与新事件都按订单冻结事实下发（历史缺字段时按 `feeProjection` 回退），你无需按事件版本分支。
 
 > **`status` 是「事件主体」自己的状态**，不是订单状态：订单事件里它是订单状态（`SUCCEEDED`/`CLOSED`/`FAILED`），**退款事件里它是退款状态**（`SUCCEEDED`/`FAILED`）。不要拿订单表去解释退款事件的 `status`——那会把一笔已支付的订单误标成失败。
 

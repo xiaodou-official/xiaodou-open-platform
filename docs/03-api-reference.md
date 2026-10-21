@@ -45,7 +45,7 @@
 | --- | --- |
 | 成功 | `201`（新建）/ `200`（同 `outTradeNo` 同业务摘要 → 幂等重放，含 `replayed=true`） |
 | 失败 | `400` `401` `403` `409` `422` `429` `502` `503` |
-| 请求体 | `outTradeNo`、`channel`、`amountFen`、`currency`、`subject`、**`payerClientIp`** 必填；`tradeScope`、`description`、`attach`、`returnUrl` 可选 |
+| 请求体 | `outTradeNo`、`channel`、`currency`、`subject`、**`payerClientIp`** 必填；`amountFen`（SELLER，缺省）或 `merchantAmountFen`（BUYER）二选一必填；`feeBearer`、`tradeScope`、`description`、`attach`、`returnUrl` 可选 |
 
 要点：
 
@@ -136,7 +136,9 @@
 | 字段 | 约束 |
 | --- | --- |
 | `outTradeNo` / `outRefundNo` | **6–64 位**，字符集仅 `A-Z a-z 0-9 _ -`（**不能含点号**、空格、中文或其他符号）；同一笔重试必须逐字复用 |
-| `amountFen` | 整数分，最小 `1`（¥0.01）；**上限按本单实际到账账号的主体类型判定**（对公主体不设平台业务金额上限、实际以支付服务方额度为准；个人主体按平台默认档，另有单独约定时以约定为准），见 [费率与限额](./07-fees-and-limits.md)；更小的值、小数点、字符串、超出上限都会被拒（`400 OPEN_API_BODY_INVALID`，`details.field=amountFen`） |
+| `amountFen` | **SELLER 模式必填**（缺省承担方），表示买家实付；整数分，最小 `1`（¥0.01）；**上限按本单实际到账账号的主体类型判定**（对公主体不设平台业务金额上限、实际以支付服务方额度为准；个人主体按平台默认档，另有单独约定时以约定为准），见 [费率与限额](./07-fees-and-limits.md)；更小的值、小数点、字符串、超出上限都会被拒（`400 OPEN_API_BODY_INVALID`，`details.field=amountFen`）。**BUYER 模式禁止出现** |
+| `feeBearer` | `SELLER` / `BUYER`（大小写敏感、不 trim）；缺省 `SELLER`。BUYER 为灰度能力（2026-10-20 起已开通）：平台回滚或闸门关闭时返回 `422 OPEN_API_FEE_BEARER_DISABLED`；只影响新单，查单/退款/历史订单不受影响 |
+| `merchantAmountFen` | **BUYER 模式必填**，商户定价/净额（整数分，最小 `1`）；服务端按买家实付反算并返回 `amountFen`。**SELLER 模式禁止出现** |
 | `currency` | 固定 `CNY`（**大小写敏感**，`cny`/`RMB` 都会被拒） |
 | `subject` | 必填，≤ **128** 字符 |
 | `description` | 可选，≤ **256** 字符 |
@@ -146,7 +148,7 @@
 | `refundAmountFen` | 整数分且 > `0`；同一订单累计不得超过实付（失败的退款不占额度） |
 | `reason`（退款） | 可选，≤ **256** 字符 |
 
-**业务摘要成员**（决定「同号同内容 → 幂等重放」还是「同号异内容 → `409`」）：`channel`、`tradeScope`、`amountFen`、`currency`、`subject`、`description`、`returnUrl`、`attach`。**`payerClientIp` 不参与**——它可以在重试时按实际情况变化，不会触发 `409`。
+**业务摘要成员**（决定「同号同内容 → 幂等重放」还是「同号异内容 → `409`」）：`channel`、`tradeScope`、`currency`、`subject`、`description`、`returnUrl`、`attach`，以及 **SELLER 的 `amountFen` / BUYER 的 `merchantAmountFen` 与 `feeBearer`**。**`payerClientIp` 不参与**——它可以在重试时按实际情况变化，不会触发 `409`。SELLER 与 BUYER 互撞（同号）一律 `409`。
 
 ## 3. 数据模型
 
@@ -160,7 +162,10 @@
 | `closedReason` | 关闭原因（可空） |
 | `channel` / `tradeScope` | 通道 / 申报交易形态（下单时冻结） |
 | `links` | 该单冻结的支付链集合（永不包含已作废链） |
-| `amountFen` / `currency` | 金额（整数分）/ 币种 |
+| `amountFen` / `currency` | 买家实付（整数分）/ 币种 |
+| `feeBearer` | 服务费承担方（`SELLER`/`BUYER`；历史订单按 `SELLER`） |
+| `merchantAmountFen` | 商户定价/净额（历史订单回退 `feeProjection.merchantSettlementFen`） |
+| `feeAmountFen` | 平台服务费（历史订单回退 `feeProjection.companyServiceFeeFen`） |
 | `attach` | 你的附加数据（事件原样回带） |
 | `expireAt` | 支付窗口截止（以服务端为准） |
 | `payUrl` | 平台收银页地址（**非下发响应恒空**：查询与关单回执都是 `null`） |
@@ -251,9 +256,12 @@
       "closedReason",
       "currency",
       "expireAt",
+      "feeAmountFen",
+      "feeBearer",
       "feeProjection",
       "latestAttempt",
       "links",
+      "merchantAmountFen",
       "nextAction",
       "openOrderId",
       "outTradeNo",
@@ -284,6 +292,8 @@
       "channel",
       "currency",
       "description",
+      "feeBearer",
+      "merchantAmountFen",
       "outTradeNo",
       "payerClientIp",
       "returnUrl",
@@ -302,8 +312,11 @@
       "eventAmountFen",
       "eventId",
       "eventType",
+      "feeAmountFen",
+      "feeBearer",
       "feeProjection",
       "grossAmountFen",
+      "merchantAmountFen",
       "occurredAt",
       "outRefundNo",
       "outTradeNo",
