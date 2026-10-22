@@ -121,7 +121,7 @@ Content-Type: application/json
 
 ### 8.3 支付结果
 
-- **异步通知**：平台 **GET** 请求商家 `notify_url`，带 `trade_status=TRADE_SUCCESS`、`out_trade_no`、`trade_no`、`money`、`sign` 等；商家返回纯文本 `success`（否则按退避重发，最多 8 次）。通知可能重复，按 `out_trade_no` 幂等。
+- **异步通知**：平台 **GET** 请求商家 `notify_url`，带 `trade_status=TRADE_SUCCESS`、`out_trade_no`、`trade_no`、`money`、`sign` 等；商家返回纯文本 `success`（大小写不敏感，`SUCCESS` 也接受；否则按退避重发，最多 8 次）。通知可能重复，按 `out_trade_no` 幂等。
 - **同步回跳**：买家付完跳回 `return_url`（带同一套签名参数）；回跳不是支付终态，终态只认通知或 `api.php act=order`。
 
 ### 8.4 已核对客户端（源码 / wire fixture，非真实首单）

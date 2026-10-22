@@ -25,7 +25,7 @@ description: 小豆支付开放平台商家接入 Skill。用于帮助商家开�
 
 - 建单：`submit.php`（GET/POST 表单）或 `mapi.php`（GET/POST，JSON）。
 - 查单：`api.php`，`act=order` 查单笔、`act=query` 查商户状态；GET/POST 表单均可，参数放 query、body 或同值镜像到两处（同键不同值会被拒绝）。
-- 通知：平台用 **GET** 请求商家 `notify_url`；商家返回纯文本 `success`。
+- 通知：平台用 **GET** 请求商家 `notify_url`；商家返回纯文本 `success`（大小写不敏感，`SUCCESS` 也接受）。
 - 签名：MD5（剔除 `sign`/`sign_type`/空值 → ASCII 排序 → `k=v&…` → 直接接密钥 → 小写 hex）。
 - 明确不做：`act=orders` 批量、`act=change`、`qrcode.php`、JSON body 建单。
 - 实测客户端：独角数卡（GET submit）、V2Board（GET submit）、[Sub2API](https://github.com/Wei-Shaw/sub2api)（POST mapi / POST api，参数镜像 query+body）、[New API](https://github.com/QuantumNous/new-api)（go-epay v0.0.5，POST submit 表单、`device=pc`，`notify_url`/`return_url` 必须是 https 完整地址）。
