@@ -98,3 +98,39 @@ Content-Type: application/json
 
 - 必填六项缺一或越界 → `400 OPEN_API_BODY_INVALID`；`tradeScope` 只在双申报应用必填（单申报可省）。
 - 成功 `201`（幂等重放 `200`）→ 响应含订单快照与 `payUrl`（支付宝单可能另有 `qrCode`）；收款页形态见 `terminal-matrix.md`。
+
+## 8. 易支付协议兼容（已有插件，非 RSA2）
+
+商家系统里已经装了易支付/彩虹支付类插件时，**不要按上面的 RSA2 七接口重写**，用协议兼容面。网关地址由卖家后台「易支付接口配置」页下发（**不是**「应用凭证」页的 `api.` Base URL）。
+
+### 8.1 端点与方法
+
+| 端点 | 方法 | 用途 | 返回 |
+| --- | --- | --- | --- |
+| `/submit.php` | GET / **POST 表单** | 建单（浏览器跳转语义） | `302` → 收银页 `payUrl` |
+| `/mapi.php` | GET / POST | 建单（程序化） | JSON `{code:1, trade_no, payurl, qrcode}` |
+| `/api.php` | GET / **POST 表单** | `act=order` 查单笔；`act=query` 查商户状态 | JSON（`status=1` 已支付） |
+
+- 参数可放 query、`application/x-www-form-urlencoded` 表单体，或两处**同值镜像**；同键不同值按 `参数不合法` 400。JSON body 明确不支持。
+- `act=orders` 批量、`act=change`、`qrcode.php` 明确不做。
+- 金额 `money` 为元字符串（`1.1`/`1.10` 均可）；`out_trade_no` 6–64 位，仅 `A-Z a-z 0-9 _ -`；`notify_url`/`return_url` 必须是 **https 完整地址**。
+
+### 8.2 签名（V1）
+
+剔除 `sign`/`sign_type`/空值 → 按键名 ASCII 排序 → `键=值&键=值`（值不额外编码）→ **直接接商户密钥** → MD5 小写十六进制。通知与回跳也用同一算法签名。
+
+### 8.3 支付结果
+
+- **异步通知**：平台 **GET** 请求商家 `notify_url`，带 `trade_status=TRADE_SUCCESS`、`out_trade_no`、`trade_no`、`money`、`sign` 等；商家返回纯文本 `success`（否则按退避重发，最多 8 次）。通知可能重复，按 `out_trade_no` 幂等。
+- **同步回跳**：买家付完跳回 `return_url`（带同一套签名参数）；回跳不是支付终态，终态只认通知或 `api.php act=order`。
+
+### 8.4 已核对客户端（源码 / wire fixture，非真实首单）
+
+| 客户端 | 建单 | 查单 | 备注 |
+| --- | --- | --- | --- |
+| 独角数卡 dujiaoka | GET `submit.php` | 一般不用 | 发卡站最常见 |
+| V2Board | GET `submit.php` | 一般不用 | 不传 `type`，按默认支付方式 |
+| [Sub2API](https://github.com/Wei-Shaw/sub2api) | POST `mapi.php` | POST `api.php`，参数同时放 query 与表单体 | 同值镜像放行 |
+| [New API](https://github.com/QuantumNous/new-api)（go-epay v0.0.5） | POST `submit.php` 表单（`device=pc`） | 不主动查单 | `ServerAddress` 必须 https；通知/回跳支持 GET |
+
+> 客户端只需填网关地址、商家 ID、商户密钥，不改代码。人读版见 `docs/13-epay-compat-integration.md`（不在 Skill 包内，需从门户或公开仓另取）。真实首单仍需按上线清单自测。
