@@ -27,6 +27,21 @@
 
 ### v1.0.0
 
+#### 修复（2026-10-22）：未派发订单关单不再误报 503
+
+- `POST /api/open/v1/payments/{outTradeNo}/close`：对**未派发**订单（买家从未唤起的微信 JSAPI 等，支付机构侧尚无交易）改为零外呼本地关闭，返回 `200` + `closeState=CLOSE_REQUESTED`。
+- 修复此前支付机构回「交易不存在」时被折成 `503 OPEN_API_GUARD_UNAVAILABLE`、商户误读为平台不可用并反复重试的问题；已派发订单的关单语义不变（先查单确认未支付才关闭；「关单未完成」仍为 `409 OPEN_API_CLOSE_NOT_COMPLETED`）。
+
+**迁移动作**：无需迁移；此前遇到 503 的未派发单可直接重试关单或等待到期自动关闭。
+
+#### 资料（2026-10-22）：易支付兼容面补充 Sub2API / New API
+
+- 公开面新增两个已核对客户端：[Sub2API](https://github.com/Wei-Shaw/sub2api)（主动查单走 `POST api.php`，参数可同时放 query 与表单体，同值镜像放行）与 [New API](https://github.com/QuantumNous/new-api)（go-epay v0.0.5，建单走 `POST submit.php` 表单，`device=pc`）。
+- 两者都只需填网关地址 / 商家 ID / 商户密钥，不改代码；`notify_url` / `return_url` 必须是 https 完整地址。通知与回跳按同一套 V1 签名规则验签。
+- 无接口行为变更；第 13 篇 §2.6 与 Skill 同步补充客户端兼容表。
+
+**迁移动作**：无需迁移。
+
 #### 变更（2026-10-19；2026-10-20 开通）：服务费承担方 add-only（灰度）
 
 - `POST /api/open/v1/payments` 新增可选 `feeBearer`（`SELLER|BUYER`，缺省 `SELLER`）与 `merchantAmountFen`（仅 BUYER）。BUYER 模式下 `amountFen` 由服务端反算并返回，请求侧禁止出现。

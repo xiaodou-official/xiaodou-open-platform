@@ -1,6 +1,6 @@
 ---
 name: xiaodou-open-platform-integration
-description: 小豆支付开放平台商家接入 Skill。用于帮助商家开发者（及其 AI 编码助手）把开放平台支付接起来：RSA2 请求签名（XD-Signature-v1）、下单/重拉起/查单/关单/退款、收银页终端能力矩阵（PC 扫码 / 手机支付宝手势主按钮 / 手机微信外推荐路径 / 微信内零点击）、平台事件通知验签（XD-Webhook-v1）与 eventId 去重、**平台响应验签（XD-Response-v1）**、错误码排障、上线检查清单与凭证轮换（含密钥标识 kid 格式与本地派生）。触发词：开放平台接入、商家 API、XD-Signature-v1、XD-Response-v1、XD-Webhook-v1、qrCode 渲染、payUrl 中转链、收银页分端、多到账账号、比例分账、上线检查清单、密钥轮换、kid 密钥标识、公钥指纹、notifyUrl 回调地址、returnUrl 返回商家、商家小票、配置提交即生效、feeProjection 费率投影。
+description: 小豆支付开放平台商家接入 Skill。用于帮助商家开发者（及其 AI 编码助手）把开放平台支付接起来：RSA2 请求签名（XD-Signature-v1）、下单/重拉起/查单/关单/退款、收银页终端能力矩阵（PC 扫码 / 手机支付宝手势主按钮 / 手机微信外推荐路径 / 微信内零点击）、平台事件通知验签（XD-Webhook-v1）与 eventId 去重、**平台响应验签（XD-Response-v1）**、错误码排障、上线检查清单与凭证轮换（含密钥标识 kid 格式与本地派生）。触发词：开放平台接入、商家 API、XD-Signature-v1、XD-Response-v1、XD-Webhook-v1、qrCode 渲染、payUrl 中转链、收银页分端、多到账账号、比例分账、上线检查清单、密钥轮换、kid 密钥标识、公钥指纹、notifyUrl 回调地址、returnUrl 返回商家、商家小票、配置提交即生效、feeProjection 费率投影、易支付/彩虹支付插件兼容、submit.php、mapi.php、api.php、Sub2API、New API。
 ---
 
 # 小豆支付开放平台 · 商家接入 Skill
@@ -17,6 +17,19 @@ description: 小豆支付开放平台商家接入 Skill。用于帮助商家开�
 - 接平台事件通知并做去重与幂等落账。
 - 排一个 `401/403/409/422/429/503`。
 - 上线前逐条自检；或轮换签名密钥。
+- **系统里已经装了易支付 / 彩虹支付类插件**（Sub2API、New API 等），只填网关地址 / 商家 ID / 商户密钥，不想改代码。
+
+## 已有易支付 / 彩虹支付插件（Sub2API、New API 等）
+
+如果商家系统里已经装了易支付/彩虹支付类插件，**不要按本 Skill 的 RSA2 七接口重写**，走协议兼容面即可：
+
+- 建单：`submit.php`（GET/POST 表单）或 `mapi.php`（GET/POST，JSON）。
+- 查单：`api.php`，`act=order` 查单笔、`act=query` 查商户状态；GET/POST 表单均可，参数放 query、body 或同值镜像到两处（同键不同值会被拒绝）。
+- 通知：平台用 **GET** 请求商家 `notify_url`；商家返回纯文本 `success`。
+- 签名：MD5（剔除 `sign`/`sign_type`/空值 → ASCII 排序 → `k=v&…` → 直接接密钥 → 小写 hex）。
+- 明确不做：`act=orders` 批量、`act=change`、`qrcode.php`、JSON body 建单。
+- 实测客户端：独角数卡（GET submit）、V2Board（GET submit）、[Sub2API](https://github.com/Wei-Shaw/sub2api)（POST mapi / POST api，参数镜像 query+body）、[New API](https://github.com/QuantumNous/new-api)（go-epay v0.0.5，POST submit 表单、`device=pc`，`notify_url`/`return_url` 必须是 https 完整地址）。
+- 人读版：`docs/13-epay-compat-integration.md`（**不在 Skill 包内**，按本文「路径基准」另取）。
 
 ## 铁律（先记这七条，能避免绝大多数事故）
 
@@ -63,4 +76,5 @@ description: 小豆支付开放平台商家接入 Skill。用于帮助商家开�
 - 不要为「微信在手机浏览器直接拉起支付」「微信 PC 原生扫码直出付款码」写代码——**平台没有这些形态**（微信支付只能在微信内调起；PC 扫码是中转链）。
 - 不要在自有 App 的 WebView 内嵌收银页；必须跳系统浏览器。
 - 不要把 mock 全绿当成「生产可用」：**mock 只证明签名与解析没错**，生产首单必须真实验证。
+- 不要把易支付兼容面当成 RSA2 七接口：两者的端点、签名（MD5 vs RSA2）与回调形态不同；已有插件走兼容面，不要重写。
 - 平台**暂不提供**沙箱/测试应用/回调模拟器；替代路径=本地 demo + 上线检查清单 + 首单人工陪跑（不承诺 SLA）。
