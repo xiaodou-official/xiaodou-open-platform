@@ -58,9 +58,12 @@
 | `return_url` | 选填：支付完成后买家**同步跳回**你页面的地址，同样必须 **https**；不填就用平台的完成页 |
 | `type` | 选填：`alipay` / `wxpay`；**不填**时按你在配置页选的默认支付方式走 |
 | `param` | 选填：你自己的透传参数，会原样带回通知与回跳 |
+| `sub_openid` | 选填：**新渠道商户微信单专用**。买家在你自己的公众号下的 openid（16–128 位字母数字/下划线/短横线）。只有商户直收（商户自有收银台）的 `wxpay` 单需要；缺失时该单返回「参数不合法」。不落库、不进日志。 |
 | `sign` / `sign_type` | 签名与签名类型（见下；`sign_type` 不填按 `MD5`） |
 
 其余字段（`device`、`sitename` 这类插件习惯带的）**带着不会报错**，我们按签名规则处理、内容忽略。
+
+> **新渠道商户微信单（add-only）**：`mapi.php` 的 JSON 响应在商户微信单（已传 `sub_openid` 且商户 appid 已绑定）时额外返回 `jsapi_params`（`appId/timeStamp/nonceStr/package/signType/paySign`），请在你的公众号页面用 `WeixinJSBridge.invoke('getBrandWCPayRequest', jsapi_params)` 拉起；`payurl` 仍返回平台收银页，但平台服务号 appid 不是你的子商户 appid，不承诺可用于商户单唤起。`submit.php` 的 302 跳转对这类单不适用，请改用 `mapi.php`。旧渠道（平台收银页）行为不变。
 
 ### 2.3 签名怎么算
 
@@ -110,7 +113,7 @@
 ## 4. 这一篇不覆盖什么（明确不做）
 
 - 只支持上面这种**共享密钥签名**的老式协议；**不支持**带 RSA 密钥对的新形态（要用它请走[接入指南](./02-integration-guide.md)的七接口）。
-- **不支持**当 API 调你的退款：退款走商家后台「成交订单」或[退款与对账](./08-refund-and-reconciliation.md)那条链。
+- **不提供退款接口**：这个面只有收单（`submit.php` / `mapi.php`）与查单（`api.php` 的 `act=order` / `act=query`），没有退款动作。需要退款时，把**你的商户单号（`out_trade_no`）、支付时间、金额和退款原因**发给对接人或官网反馈渠道，由平台核实后按原路退回；退款进度与结果在商家后台「开放平台 → 交易流水」的「退款」列查看。原生签名 API（RSA2）的退款链见[退款与对账](./08-refund-and-reconciliation.md) §1，与本协议面无关。
 - **不支持**批量查询、修改结算账户、二维码直出等边角能力。
 - 你系统里原有的「免签 / 第四方代收」类网关**不在迁移范围**——我们不接入也**不充当**那类通道（见 [README 的 FAQ](../README.md#常见问题faq)）。
 

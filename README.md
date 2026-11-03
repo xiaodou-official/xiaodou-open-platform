@@ -4,13 +4,13 @@
   <img src="./assets/readme/hero.svg" width="880" alt="小豆支付开放平台：支付宝与微信聚合收款接口；七个接口、三套签名、兼容 Sub2API / New API / 易支付与彩虹支付类插件协议">
 </p>
 
-**直接找**：[接口一览](#接口一览) ｜ [五分钟上手](#五分钟上手) ｜ [易支付协议兼容接入](./docs/13-epay-compat-integration.md) ｜ [到账账号与收款分配](./docs/14-settlement-accounts.md) ｜ [文档目录](#文档目录14-篇) ｜ [常见问题](#常见问题faq)
+**直接找**：[接口一览](#接口一览) ｜ [五分钟上手](#五分钟上手) ｜ [易支付协议兼容接入](./docs/13-epay-compat-integration.md) ｜ [到账账号与收款分配](./docs/14-settlement-accounts.md) ｜ [微信 JSAPI 公众号配置](./docs/15-wechat-jsapi-setup.md) ｜ [文档目录](#文档目录15-篇) ｜ [常见问题](#常见问题faq)
 
 > 线上入口（买家浏览与**卖家中心 / 免费开店**都在这里）：<https://xdjishi.cn/>
 
 > **可点击演示**（不用注册、零联网，数据全为演示值；在浏览器里点着走完「申请 → 收款 → 到账」）：<https://xdfair.cn/demo/>
 
-> **在线文档中心**（14 篇文档逐篇成页，可下载文档包与 Skill 包）：<https://xdfair.cn/docs/> ｜ [Skill 页](https://xdfair.cn/skill/) ｜ [文档与 Skill 下载](https://xdfair.cn/downloads/)
+> **在线文档中心**（15 篇文档逐篇成页，可下载文档包与 Skill 包）：<https://xdfair.cn/docs/> ｜ [Skill 页](https://xdfair.cn/skill/) ｜ [文档与 Skill 下载](https://xdfair.cn/downloads/)
 
 > **中文产品页**：个人接入说明 <https://xdfair.cn/individual/> ｜ 易支付签名校验工具 <https://xdfair.cn/tools/epay-sign/>（浏览器本地计算，不登录、不传密钥）
 
@@ -28,7 +28,7 @@
 
 费用**全平台统一一档**：平台服务费 1.5%（商家实收 98.5%），手续费 0.01 元起；每一单的准确金额仍以响应里的 `feeProjection` 为准。 服务费**默认从商家结算款内扣（卖家承担）**；买家承担为灰度能力（2026-10-20 起已开通，仍受单笔上限与平台闸门约束），以订单接口返回为准。**入驻、开通、接入对接全程免费**：没有搭建费、入驻费、开通费，也不另收通道费，没有任何一次性收费。
 
-这个仓库就是它的**全部接入资料**：14 篇文档、四种语言的签名示例、一个能跑起来的本地演示，还有一份可以直接丢给 AI 编码助手（Claude Code、Codex 之类）的 Skill。**跟你在商家后台看到的是同一份内容。**
+这个仓库就是它的**全部接入资料**：15 篇文档、四种语言的签名示例、一个能跑起来的本地演示，还有一份可以直接丢给 AI 编码助手（Claude Code、Codex 之类）的 Skill。**跟你在商家后台看到的是同一份内容。**
 
 > 版本看 [`MANIFEST.json`](./MANIFEST.json)（`skillVersion`、API 版本、签名版本、`contentHash` 都在里面）。
 > 这里是**接入资料，不是官方 SDK**——我们不发包，示例代码是给你直接抄的参考实现。
@@ -36,7 +36,7 @@
 
 **这个仓里有什么（不用先申请账号，直接拿）**：
 
-- **14 篇接入文档** —— 从「5 分钟跑通首单」到终端行为、错误码、上线检查、密钥轮换；
+- **15 篇接入文档** —— 从「5 分钟跑通首单」到终端行为、错误码、上线检查、密钥轮换；
 - **四种语言的签名示例**（Node.js / Java / PHP / Python），带一份**可以自己跑的对照值**；
 - **本地演示**（`demo/h5-cashier/`）—— 零依赖，断网也能跑通「下单 → 收款 → 查单 → 关单 → 退款 → 收通知」整条链；
 - **一份 AI Agent Skill**（[`skill/`](./skill/SKILL.md)）—— 丢给编码助手就能照着接，和后台下载的那份一模一样。
@@ -169,7 +169,7 @@ node demo/h5-cashier/server.js        # 商家控制台 + 终端预览 + 收银�
 node demo/h5-cashier/smoke.js         # 冒烟自检（含负向用例），打印 [OK]
 ```
 
-## 文档目录（14 篇）
+## 文档目录（15 篇）
 
 | # | docId | 篇目 | 文件 |
 | --- | --- | --- | --- |
@@ -187,6 +187,7 @@ node demo/h5-cashier/smoke.js         # 冒烟自检（含负向用例），打�
 | 12 | `XD-OP-12` | 凭证与密钥管理 | [`docs/12-credential-key-management.md`](./docs/12-credential-key-management.md) |
 | 13 | `XD-OP-13` | 易支付协议兼容接入（已有插件的系统怎么切过来） | [`docs/13-epay-compat-integration.md`](./docs/13-epay-compat-integration.md) |
 | 14 | `XD-OP-14` | 到账账号与收款分配（查询接口） | [`docs/14-settlement-accounts.md`](./docs/14-settlement-accounts.md) |
+| 15 | `XD-OP-15` | 微信 JSAPI 公众号配置（商户自有收银台） | [`docs/15-wechat-jsapi-setup.md`](./docs/15-wechat-jsapi-setup.md) |
 
 ## 常见问题（FAQ）
 
@@ -195,6 +196,8 @@ node demo/h5-cashier/smoke.js         # 冒烟自检（含负向用例），打�
 
 **微信和支付宝都能收吗？**
 两条通道都做好了（支付宝：官方收款码 + 收银页；微信：在微信里打开页面后调起支付）。**支付宝现在就能接；微信 JSAPI 已开放**——买家在微信内打开收银页即可调起微信支付（仅限微信内浏览器；微信外手机浏览器与商家 App 内没有「直接拉起」形态）。其他通道或交易形态的放行仍由平台整体控制（不区分应用、后台没有查询面，也不要靠试探下单确认）。未放行时下单会返回 `422` `OPEN_API_CHANNEL_UNAVAILABLE`，这是**正常的、可预期的拒绝**，别当故障、更别反复重试。
+
+**新渠道（商户自有收银台）说明**：如果你是**新渠道商户**（自己的商户号直收，属于渠道商模式），可用渠道按你已开通的商户能力判定，不跟平台整体开关走；微信单需要在建单/重拉起时提交买家在你**自己公众号**下的 `subOpenid`，下单响应会返回 `jsapiParams` 供你在自己页面拉起。**公众号、网页授权域名与 JSAPI 支付授权目录怎么配，见[微信 JSAPI 公众号配置](./docs/15-wechat-jsapi-setup.md)。** 旧渠道（平台收银页）口径与上面 FAQ 相同，行为不变。细节见[API 参考 · 创建支付订单](./docs/03-api-reference.md)。
 
 **钱多久到账？要手动提现吗？**
 付成功就当场分账，然后按设置**自动转到你绑定的银行卡**——**不用手动提现**。现在是**次日中午前到账**（含节假日）；周期和时效会随渠道和设置变，以后台「资金 / 结算」页显示的为准。
@@ -251,7 +254,7 @@ Use with Claude Code / Codex / Cursor / Copilot: point the assistant at [`skill/
 README.md          本文件（简介 / 索引 / 版本 / 许可证 / 免责）
 MANIFEST.json      机器可读清单（版本、逐篇 hash、包 contentHash、发布记录）
 PUBLISHING.md      公开发布参数与流程
-docs/              接入文档 14 篇
+docs/              接入文档 15 篇
 examples/          Node.js / Java / PHP / Python 四语言签名示例
 demo/h5-cashier/   本地收银演示（回环 + 假数据，零外部依赖）
 skill/             商家接入 Skill（给 AI 编码助手用，与 docs 同源）

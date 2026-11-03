@@ -20,7 +20,7 @@
 > **头是「逐字比对」的**：上面的字符集与长度都是硬约束，越界与缺失返回**同一个** `400 OPEN_API_HEADER_INVALID`（错误体不会指出是哪一头；唯一例外：同名头重复的 `400` 会在 message 里点名该头——每个头只提交一次即可避开）——排障时先按本表逐头核形态，再怀疑签名。
 
 **`Content-Type`**：**写方法（`POST`）必须带 `Content-Type: application/json`**（允许带 `charset` 参数；服务端会小写化并去掉 `;` 参数后比对）。这条对**没有请求体的两个端点**（重拉起、关单）同样成立——`GET` 可以不带。**`GET` 不带时，参与签名的是空行**（不是 `application/json`）：签名串里写的是「你实际发出的那个头」的规范化值，没发就是空——见 [安全红线 · 请求签名](./09-security-redlines.md)。
-请求体本身：带请求体的两个端点（创建订单、创建退款）是**严格模式**，多传 schema 之外的字段直接 `400`；重拉起/关单/查单/退款查询**没有请求体字段**，请求体可省略（发了合法 JSON 也被忽略，但**非法 JSON、重复键、超出 64KB 仍会 `400`/`413`**）。
+请求体本身：创建订单/创建退款是**严格模式**，多传 schema 之外的字段直接 `400`。重拉起端点可选携带 `subOpenid/subAppid`（**新渠道商户微信单**重拉起时 `subOpenid` 必填），其余字段容忍忽略；关单/查单/退款查询没有请求体字段，请求体可省略（发了合法 JSON 也被忽略，但**非法 JSON、重复键、超出 64KB 仍会 `400`/`413`**）。
 
 **响应头**
 
@@ -35,7 +35,7 @@
 - 失败：`{ "code": "...", "message": "...", "requestId": "..." }` —— 失败**永不**返回 2xx，`code` **只在总表内**（平台侧内部故障投影为 `503 OPEN_API_GUARD_UNAVAILABLE`，不会把内部码透给你）。
 - `details` 字段**只在两个码上出现**：① **平台边缘腿**的来源 IP 拒绝（`403 OPEN_API_SOURCE_IP_REJECTED`）带 `details.reason`（七种取值见 [安全红线 · 请求来源](./09-security-redlines.md)），**不会回显**平台观测到的地址；② **限额越界**（`OPEN_API_LIMIT_EXCEEDED`，HTTP 状态见 [错误码与排障](./04-errors-and-troubleshooting.md) 总表）带**触发面**——订单/尝试腿=`details.scopes`（枚举见 [费率与限额](./07-fees-and-limits.md)），**退款累计腿**=`details.scope` 单值 `REFUND_CUMULATIVE` + `outRefundNo`。**应用白名单腿**的同一个 `403` 只有三字段。
 
-**通用约定**：金额整数分（`Fen`）；**带请求体的两个端点**（创建订单、创建退款）是**严格模式**——多传 schema 之外的字段直接 `400`；其余端点（重拉起、查单、关单、退款查询）**不接受请求体**，带了也不会被解析（不要指望它报错）。错误码只取 [错误码与排障](./04-errors-and-troubleshooting.md) 的总表。**任何端点**都可能返回 `413`（请求体超过流式上限）；平台侧内部故障一律投影为 **`503 OPEN_API_GUARD_UNAVAILABLE`**（不会出现表外码，也不会有 `500`）；请求列字段约束见 [§2.7](#28-请求字段约束创建订单--创建退款)。
+**通用约定**：金额整数分（`Fen`）；创建订单/创建退款是**严格模式**——多传 schema 之外的字段直接 `400`；重拉起端点可选携带 `subOpenid/subAppid`（未知字段容忍忽略），其余端点（查单、关单、退款查询）**不接受请求体**，带了也不会被解析（不要指望它报错）。错误码只取 [错误码与排障](./04-errors-and-troubleshooting.md) 的总表。**任何端点**都可能返回 `413`（请求体超过流式上限）；平台侧内部故障一律投影为 **`503 OPEN_API_GUARD_UNAVAILABLE`**（不会出现表外码，也不会有 `500`）；请求列字段约束见 [§2.7](#28-请求字段约束创建订单--创建退款)。
 
 ## 2. 端点
 
@@ -45,13 +45,14 @@
 | --- | --- |
 | 成功 | `201`（新建）/ `200`（同 `outTradeNo` 同业务摘要 → 幂等重放，含 `replayed=true`） |
 | 失败 | `400` `401` `403` `409` `422` `429` `502` `503` |
-| 请求体 | `outTradeNo`、`channel`、`currency`、`subject`、**`payerClientIp`** 必填；`amountFen`（SELLER，缺省）或 `merchantAmountFen`（BUYER）二选一必填；`feeBearer`、`tradeScope`、`description`、`attach`、`returnUrl` 可选 |
+| 请求体 | `outTradeNo`、`channel`、`currency`、`subject`、**`payerClientIp`** 必填；`amountFen`（SELLER，缺省）或 `merchantAmountFen`（BUYER）二选一必填；`feeBearer`、`tradeScope`、`description`、`attach`、`returnUrl` 可选；**新渠道商户微信单**另需 `subOpenid`（`subAppid` 可选） |
 
 要点：
 
 - 同 `outTradeNo` 异业务摘要 → `409`（冲突），**不要换号重试**。
 - **业务幂等重放**（同 `outTradeNo` 同业务摘要，响应含 `replayed=true`）返回的是**订单当前快照**：存在有效支付尝试时含有效 `payUrl`；尝试已终态/过期时 `payUrl` 为空并附 `nextAction=CREATE_ATTEMPT`，且**不回传过期支付材料**。注意与**请求级重放**区分：同 `X-XD-Request-Id` 重发拿到的是**首次响应原件**（当时的状态码与 body），**不等于当前状态**——拿当前状态走查单（见 [接入指南 §4](./02-integration-guide.md)）。
 - 支付宝渠道在**下发响应**中另含 `qrCode`（官方收款码，服务端校验后下发）。
+- **新渠道商户单（商户自有收银台）**：`collectionMode=MERCHANT` 的商户由自己的商户号直收，支付宝/微信按商户已开通能力判定。微信单必须传买家在**商户自己的公众号**下的 `subOpenid`（`subAppid` 可选，传入时必须与商户已绑定 appid 逐字一致），下发响应另含 `jsapiParams`（`appId/timeStamp/nonceStr/package/signType/paySign`），由商户页面用 `WeixinJSBridge.invoke('getBrandWCPayRequest', jsapiParams)` 拉起。`subOpenid` **不落库**，每次重拉起都要重新提交；平台服务号 appid 不能用于商户单（`422 OPEN_API_MERCHANT_APPID_INVALID`），未绑定商户 appid 返回 `403 OPEN_API_MERCHANT_APPID_UNAVAILABLE`。旧渠道（平台收银页）行为不变。
 - `returnUrl` **属于业务摘要**：同一个 `outTradeNo` 重试时必须**逐字复用它**——传不同值不是「被忽略」，而是 `409 OPEN_API_IDEMPOTENCY_CONFLICT`（摘要成员见 [§2.7](#28-请求字段约束创建订单--创建退款)）。它的目标在首次下单时冻结。
 - `payerClientIp` 是**必填**字段：买家客户端的公网 IP，由**你的服务端转交**（填写合法公网 IPv4/IPv6，不要填内网或保留地址）。它用于风控提示，平台不会替你解析代理链；缺失或非法一律 `400`。
 
@@ -61,13 +62,14 @@
 | --- | --- |
 | 成功 | `201`（新尝试）/ `200`（并发赢家投影） |
 | 失败 | `400` `401` `403` `404` `409` `422` `429` `502` `503` |
-| 请求体 | 无（写方法仍须 `Content-Type: application/json`） |
+| 请求体 | 可选：新渠道商户微信单须重新提交 `subOpenid`（`subAppid` 可选）；其余订单携带即 `422`。未知字段容忍忽略 |
 
 要点：
 
 - 语义是「**关旧建新**」：仅关闭处于进行中的旧尝试（状态不确定的尝试按纪律**不判死**），并创建新尝试。
-- 返回的是**新材料**：`payUrl` 与 `qrCode` 同批更换，**旧码不可复用**。
+- 返回的是**新材料**：`payUrl` 与 `qrCode` 同批更换，**旧码不可复用**；商户微信单另返回新的 `jsapiParams`。
 - 需要新收款材料时**只用这个端点**，不要重复调用下单接口。
+- 新渠道商户微信单的 `subOpenid` **不落库**：每次重拉起都必须重新提交（缺失返回 `422 OPEN_API_MERCHANT_SUB_OPENID_INVALID`）。
 
 ### 2.3 `GET /api/open/v1/payments/{outTradeNo}` — 查询订单
 
@@ -147,10 +149,12 @@
 | `attach` | 可选，≤ **256** 字符；按事件**原样回带**（首尾空白会被去掉） |
 | `returnUrl` | 可选，绝对 **`https`**（不得带 userinfo、不得带 query/fragment），≤ **512** 字符 |
 | `payerClientIp` | 必填，**合法公网** IPv4/IPv6——内网 / 保留段 / 文档示例段（`10/8`、`172.16/12`、`192.168/16`、`127/8`、CGNAT、`203.0.113/24` 等）一律拒绝 |
+| `subOpenid` | 仅新渠道商户微信单：16–128 位 `A-Z a-z 0-9 _ -`；`WECHAT_H5` 商户单必填、支付宝/平台单禁止出现；不落库、不进日志/查询 |
+| `subAppid` | 可选，`wx` + 16 位十六进制；如传必须等于商户已绑定公众号 appid；平台服务号 appid 一律拒绝 |
 | `refundAmountFen` | 整数分且 > `0`；同一订单累计不得超过实付（失败的退款不占额度） |
 | `reason`（退款） | 可选，≤ **256** 字符 |
 
-**业务摘要成员**（决定「同号同内容 → 幂等重放」还是「同号异内容 → `409`」）：`channel`、`tradeScope`、`currency`、`subject`、`description`、`returnUrl`、`attach`，以及 **SELLER 的 `amountFen` / BUYER 的 `merchantAmountFen` 与 `feeBearer`**。**`payerClientIp` 不参与**——它可以在重试时按实际情况变化，不会触发 `409`。SELLER 与 BUYER 互撞（同号）一律 `409`。
+**业务摘要成员**（决定「同号同内容 → 幂等重放」还是「同号异内容 → `409`」）：`channel`、`tradeScope`、`currency`、`subject`、`description`、`returnUrl`、`attach`，以及 **SELLER 的 `amountFen` / BUYER 的 `merchantAmountFen` 与 `feeBearer`**。**`payerClientIp` 不参与**——它可以在重试时按实际情况变化，不会触发 `409`。**`subOpenid`/`subAppid` 也不参与**——商户微信单重拉起时重新提交的 openid 不构成摘要漂移。SELLER 与 BUYER 互撞（同号）一律 `409`。
 
 ## 3. 数据模型
 
@@ -261,6 +265,7 @@
       "feeAmountFen",
       "feeBearer",
       "feeProjection",
+      "jsapiParams",
       "latestAttempt",
       "links",
       "merchantAmountFen",
@@ -299,6 +304,8 @@
       "outTradeNo",
       "payerClientIp",
       "returnUrl",
+      "subAppid",
+      "subOpenid",
       "subject",
       "tradeScope"
     ],

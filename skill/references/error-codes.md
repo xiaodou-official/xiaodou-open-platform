@@ -21,6 +21,7 @@
 | `OPEN_API_RESOURCE_NOT_FOUND` | 404 | 中性不存在（含跨应用/跨商家） |
 | `OPEN_API_STATE_INVALID` | 409 | 状态机非法迁移或终态冲突 |
 | `OPEN_API_CHANNEL_UNAVAILABLE` | 422 | 通道链路未放行：**正常拒绝**，不要重试刷量 |
+| `OPEN_API_MERCHANT_CHANNEL_UNAVAILABLE` | 409 | 商户单所选支付方式对该商家暂不可用：**可换支付方式重试**，平台未整体停服 |
 | `OPEN_API_CHANNEL_UNSUPPORTED` | 422 | 通道不受支持（预留词表位） |
 | `OPEN_API_SCOPE_CHANNEL_MISMATCH` | 422 | 申报交易形态与通道绑定不符 |
 | `OPEN_API_LIMIT_EXCEEDED` | 422 | 限额越界：信封带**触发面**——订单/尝试腿=`details.scopes`（数组）；**退款累计腿**=`details.scope` 单值 `REFUND_CUMULATIVE` + `outRefundNo`。先关掉在途未支付订单；限额无自助查询面，需调整走官网反馈渠道（附 `requestId`） |

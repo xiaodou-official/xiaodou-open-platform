@@ -34,6 +34,10 @@
 | `OPEN_API_STATE_INVALID` | 409 | 状态机非法迁移或终态冲突（例如对已成功订单再次关单）。 |
 | `OPEN_API_CLOSE_NOT_COMPLETED` | 409 | 关单未完成：支付机构未完成本次关单，**订单仍可能处于可支付状态**（平台不会把订单本地判死）。稍后重试关单，或等订单到期自动关闭（到期后不可支付）。**可重试**，但不要紧循环。 |
 | `OPEN_API_CHANNEL_UNAVAILABLE` | 422 | 通道存在但链路未放行（闸门关闭或前置未齐）。**可预期的正常拒绝**，不要重试刷量。 |
+| `OPEN_API_MERCHANT_CHANNEL_UNAVAILABLE` | 409 | 商户单所选支付方式对当前商家暂不可用（商户能力/渠道子状态/平台开关）。**可换支付方式重试**；不代表平台整体停服。 |
+| `OPEN_API_MERCHANT_SUB_OPENID_INVALID` | 422 | 商户微信单 `subOpenid` 缺失/形态非法，或支付宝单/平台单携带了 `subOpenid/subAppid`。按文末请求字段约束传参。 |
+| `OPEN_API_MERCHANT_APPID_UNAVAILABLE` | 403 | 商户微信公众号 appid 尚未绑定或未完成读回确认：微信支付暂不可用。先完成商户收银台配置。 |
+| `OPEN_API_MERCHANT_APPID_INVALID` | 422 | `subAppid` 形态非法、使用了平台服务号 appid，或与商户已绑定 appid 不一致。 |
 | `OPEN_API_CHANNEL_UNSUPPORTED` | 422 | 通道不受支持（预留词表位）。 |
 | `OPEN_API_SCOPE_CHANNEL_MISMATCH` | 422 | 申报交易形态与通道绑定不符（含越界/双申报缺省/空申报）。 |
 | `OPEN_API_FEE_BEARER_DISABLED` | 422 | 买家承担服务费未开放（灰度/回滚闸门关闭）。**只挡新 BUYER 单**；查单/退款/已有订单读取不受影响。需要该能力请关注门户公告，不要改换参数绕过。 |
@@ -99,6 +103,10 @@
     "OPEN_API_IDEMPOTENCY_CONFLICT": 409,
     "OPEN_API_RESOURCE_NOT_FOUND": 404,
     "OPEN_API_CHANNEL_UNAVAILABLE": 422,
+    "OPEN_API_MERCHANT_CHANNEL_UNAVAILABLE": 409,
+    "OPEN_API_MERCHANT_SUB_OPENID_INVALID": 422,
+    "OPEN_API_MERCHANT_APPID_UNAVAILABLE": 403,
+    "OPEN_API_MERCHANT_APPID_INVALID": 422,
     "OPEN_API_CHANNEL_UNSUPPORTED": 422,
     "OPEN_API_SCOPE_CHANNEL_MISMATCH": 422,
     "OPEN_API_STATE_INVALID": 409,

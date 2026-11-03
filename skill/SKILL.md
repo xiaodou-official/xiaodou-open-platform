@@ -1,6 +1,6 @@
 ---
 name: xiaodou-open-platform-integration
-description: 小豆支付开放平台商家接入 Skill。用于帮助商家开发者（及其 AI 编码助手）把开放平台支付接起来：RSA2 请求签名（XD-Signature-v1）、下单/重拉起/查单/关单/退款、收银页终端能力矩阵（PC 扫码 / 手机支付宝手势主按钮 / 手机微信外推荐路径 / 微信内零点击）、平台事件通知验签（XD-Webhook-v1）与 eventId 去重、**平台响应验签（XD-Response-v1）**、错误码排障、上线检查清单与凭证轮换（含密钥标识 kid 格式与本地派生）。触发词：开放平台接入、商家 API、XD-Signature-v1、XD-Response-v1、XD-Webhook-v1、qrCode 渲染、payUrl 中转链、收银页分端、多到账账号、比例分账、上线检查清单、密钥轮换、kid 密钥标识、公钥指纹、notifyUrl 回调地址、returnUrl 返回商家、商家小票、配置提交即生效、feeProjection 费率投影、易支付/彩虹支付插件兼容、submit.php、mapi.php、api.php、Sub2API、New API。
+description: 小豆支付开放平台商家接入 Skill。用于帮助商家开发者（及其 AI 编码助手）把开放平台支付接起来：RSA2 请求签名（XD-Signature-v1）、下单/重拉起/查单/关单/退款、收银页终端能力矩阵（PC 扫码 / 手机支付宝手势主按钮 / 手机微信外推荐路径 / 微信内零点击）、平台事件通知验签（XD-Webhook-v1）与 eventId 去重、**平台响应验签（XD-Response-v1）**、错误码排障、上线检查清单与凭证轮换（含密钥标识 kid 格式与本地派生）；也覆盖**新渠道商户自有收银台的微信 JSAPI 公众号配置**（网页授权域名、JSAPI 支付授权目录、appid 绑定与读回、subOpenid 取用）。触发词：开放平台接入、商家 API、XD-Signature-v1、XD-Response-v1、XD-Webhook-v1、qrCode 渲染、payUrl 中转链、收银页分端、多到账账号、比例分账、上线检查清单、密钥轮换、kid 密钥标识、公钥指纹、notifyUrl 回调地址、returnUrl 返回商家、商家小票、配置提交即生效、feeProjection 费率投影、易支付/彩虹支付插件兼容、submit.php、mapi.php、api.php、Sub2API、New API、微信 JSAPI 公众号配置、网页授权域名、JSAPI 支付授权目录、subOpenid、商户自有收银台。
 ---
 
 # 小豆支付开放平台 · 商家接入 Skill
@@ -53,6 +53,7 @@ description: 小豆支付开放平台商家接入 Skill。用于帮助商家开�
 ⑤ 读 references/error-codes.md      → 按 code 分派错误，不要按 message 判错
 ⑥ 读 references/go-live-checklist.md → 上线前逐条自检（平台不提供沙箱）
 ⑦ 读 references/key-management.md   → 生成/轮换/停用/应急吊销；注意轮换是原子的
+⑧ 新渠道商户收微信时读 references/wechat-jsapi-setup.md → 公众号、网页授权域名、JSAPI 支付授权目录、appid 绑定与 subOpenid
 ```
 
 ## 资产
@@ -60,7 +61,7 @@ description: 小豆支付开放平台商家接入 Skill。用于帮助商家开�
 | 资产 | 路径 | 在 Skill 包里可取到？ | 说明 |
 | --- | --- | --- | --- |
 | 四语言签名示例 | `examples/{node,java,php,python}/`（索引见 [`examples/README.md`](./examples/README.md)） | ✅ 在包内 | 与 `docs/` 同源的参考实现：请求签名四语言 + 事件验签 / **响应验签**（Node），含 golden 向量 |
-| 人读文档（14 篇） | `docs/` | ❌ 不在包内 | 含 API 参考与终端能力矩阵；用门户「开发者文档」页的「下载文档包」或公开仓的 `docs/` |
+| 人读文档（15 篇） | `docs/` | ❌ 不在包内 | 含 API 参考与终端能力矩阵；用门户「开发者文档」页的「下载文档包」或公开仓的 `docs/` |
 | 本地收银 demo | `demo/h5-cashier/` | ❌ 不在包内 | 零依赖，loopback + mock，全链可跑（含负向用例）；用公开仓全量目录 |
 
 > **路径基准（别踩这个坑）**：本 Skill 有**两种落地形态**，可用路径不一样——
