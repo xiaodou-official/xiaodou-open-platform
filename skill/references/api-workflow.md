@@ -14,7 +14,7 @@ Base URL 由平台下发（文档里写 `<BASE_URL>`；它是**纯 host、不含
 | `POST /api/open/v1/payments/{outTradeNo}/attempts` | 重拉起 | `201` / `200`（并发赢家） | **关旧建新**，新材料同批更换；需要新码只走这里。无请求体字段，但**必须带 `Content-Type: application/json`** |
 | `GET /api/open/v1/payments/{outTradeNo}` | 查单 | `200` | **本地权威读**；`payUrl` 与 `qrCode` **恒为 null** |
 | `POST /api/open/v1/payments/{outTradeNo}/close` | 关单 | `200` | 先与支付机构确认未支付才关。`200` 回执带 `closeState`：`CLOSE_REQUESTED`（已受理）/ `ALREADY_CLOSED`（本就已关闭）/ `UNKNOWN_KEPT`（结果不确定，**维持原状不判死**）/ `PROVIDER_PAID_CONFLICT`（关单过程中发现已支付，订单转成功）；**受理前**已判已支付 → `409`（错误体**不含** `closeState`）。两条路的正确动作相同：**先查单，不要重试关单**。无请求体字段，但**必须带 `Content-Type: application/json`** |
-| `POST /api/open/v1/refunds` | 退款 | `201` / `200`（幂等重放） | 仅已支付订单；累计退款 ≤ 实付；按**下单时冻结的收款分配快照**发起回退（实际到账路径以支付服务方原交易与分账合同为准）——**缺快照 → `409` `OPEN_API_STATE_INVALID`**（该单不能自助退款：带 `outTradeNo`/`requestId` 走官网反馈人工处置，**不要换号重试**）；被拒 `502`；不确定 `UNKNOWN` |
+| `POST /api/open/v1/refunds` | 退款 | `201` / `200`（幂等重放） | 仅已支付订单；累计退款 ≤ 实付；按**下单时冻结的收款分配快照**发起回退（实际到账路径以支付服务方原交易与分账合同为准）——**缺快照 → `409` `OPEN_API_STATE_INVALID`**（该单不能自助退款：在门户「开放平台 → 交易流水」对应订单点「申请退款」提交工单，或带 `outTradeNo`/`requestId` 联系对接人；**不要换号重试**）；被拒 `502`；不确定 `UNKNOWN` |
 | `GET /api/open/v1/refunds/{outRefundNo}` | 退款查询 | `200` | 只读本地权威状态 |
 | `GET /api/open/v1/settlement/accounts` | 查到账账号与收款分配（只读） | `200` | **只读**：到账账号列表（主体名 / 商户号 / 银行名 / 卡尾号 4 位）＋当前收款方式与勾选顺序；`mode=RATIO` 时返回配置面 `routing.ratios`（2–4 个账号，每项 `0 < shareBps < 10000`、合计 10000bps），单笔生效腿按可用账号与 `unavailablePolicy` 决定；**设定面在商家后台**，无写参数、无请求体、无请求级幂等 |
 
@@ -30,7 +30,7 @@ Base URL 由平台下发（文档里写 `<BASE_URL>`；它是**纯 host、不含
 
 **实现要点**：网络超时/5xx 重试时**复用同一个 `requestId` 与同一份请求体**，但 **nonce 必须换新**（同一个 nonce 在 10 分钟内复用会拿到 `409 OPEN_API_REPLAY`，永远走不到幂等重放）；`409` 的处置是**先查单**，不是换号重下单。**两层重放的语义不同，别混**：**请求级重放**（同 `requestId` 重发）返回的是**首次响应原件**（当时的状态码与 body——可能是 `201` 与当时下发的 `payUrl`，**不是当前快照**，别拿它当现状）；**业务级重放**（换新 `requestId`、同 `outTradeNo` 同业务摘要，响应含 `replayed=true`）返回的才是**订单当前快照**：存在有效支付尝试时含 `payUrl`；尝试已终态/过期时 `payUrl` 为空并附 `nextAction=CREATE_ATTEMPT`——需要新材料就调重拉起，这不是异常。**拿订单当前状态一律走查单。**
 
-**请求头**：六头成组；所有 `POST` 都要带 `Content-Type: application/json`（允许 charset 参数），`GET` 可省——**省掉时签名串的 `CONTENT_TYPE` 行是空行**（不是 `application/json`）；各头长度/字符集是硬约束。**请求字段约束（建单/退款逐字硬约束，违反是 `400 OPEN_API_BODY_INVALID`）**：建单必填六项——`outTradeNo` / `channel` / `amountFen` / `currency` / `subject` / `payerClientIp`（`tradeScope` 双申报应用必填）；`outTradeNo`/`outRefundNo` 6–64 位、字符集仅 `A-Z a-z 0-9 _ -`（**不能含点号**）；`amountFen` 整数分、最小 `1`（**上限按本单实际到账账号的主体类型判定**：对公主体不设平台业务金额上限，实际以支付服务方额度为准；个人主体按平台默认档）；`currency` 固定 `CNY`（大小写敏感）；`subject` ≤ 128、`description`/`attach`/退款 `reason` ≤ 256、`returnUrl` 绝对 `https` ≤ 512；`payerClientIp` 必须是**合法公网**地址（内网/保留段/文档示例段一律拒绝）。`channel` ∈ `ALIPAY_H5` / `WECHAT_H5`；`tradeScope` ∈ `PHYSICAL_FACE_TO_FACE` / `CARD_VIRTUAL`。**业务摘要成员**=`channel`/`tradeScope`/`amountFen`/`currency`/`subject`/`description`/`returnUrl`/`attach`（`payerClientIp` 不参与，可随重试变化）——`returnUrl` 在摘要内，改了再重试是 `409`。完整表与人读版见 `docs/03-api-reference.md` §2.7。
+**请求头**：六头成组；所有 `POST` 都要带 `Content-Type: application/json`（允许 charset 参数），`GET` 可省——**省掉时签名串的 `CONTENT_TYPE` 行是空行**（不是 `application/json`）；各头长度/字符集是硬约束。**请求字段约束（建单/退款逐字硬约束，违反是 `400 OPEN_API_BODY_INVALID`）**：建单必填六项——`outTradeNo` / `channel` / `amountFen` / `currency` / `subject` / `payerClientIp`（`tradeScope` 双申报应用必填）；**商户单可选买家标识**——`buyerId`（1–128 位可见安全文本）与 `buyerPhone`（中国大陆手机号，归一后 11 位）**只允许商户单**，平台单携带即 `422 OPEN_API_MERCHANT_BUYER_ID_INVALID`；平台只存 HMAC 摘要、不落明文、不进日志/查询/响应，且**不参与业务摘要**。不传不影响建单；商户支付宝单在平台开启强制买家标识模式时二选一必传（`422 OPEN_API_MERCHANT_BUYER_ID_REQUIRED`）。**建议商户单尽量传**——用于买家频次/新买家档与店铺级/平台级黑名单；`outTradeNo`/`outRefundNo` 6–64 位、字符集仅 `A-Z a-z 0-9 _ -`（**不能含点号**）；`amountFen` 整数分、最小 `1`（**上限按本单实际到账账号的主体类型判定**：对公主体不设平台业务金额上限，实际以支付服务方额度为准；个人主体按平台默认档）；`currency` 固定 `CNY`（大小写敏感）；`subject` ≤ 128、`description`/`attach`/退款 `reason` ≤ 256、`returnUrl` 绝对 `https` ≤ 512；`payerClientIp` 必须是**合法公网**地址（内网/保留段/文档示例段一律拒绝）。`channel` ∈ `ALIPAY_H5` / `WECHAT_H5`；`tradeScope` ∈ `PHYSICAL_FACE_TO_FACE` / `CARD_VIRTUAL`。**业务摘要成员**=`channel`/`tradeScope`/`amountFen`/`currency`/`subject`/`description`/`returnUrl`/`attach`（`payerClientIp` 不参与，可随重试变化）——`returnUrl` 在摘要内，改了再重试是 `409`。完整表与人读版见 `docs/03-api-reference.md` §2.7。
 
 ## 3. 状态与终态
 
@@ -123,6 +123,8 @@ Content-Type: application/json
 
 - **异步通知**：平台 **GET** 请求商家 `notify_url`，带 `trade_status=TRADE_SUCCESS`、`out_trade_no`、`trade_no`、`money`、`sign` 等；商家返回纯文本 `success`（大小写不敏感，`SUCCESS` 也接受；否则按退避重发，最多 8 次）。通知可能重复，按 `out_trade_no` 幂等。
 - **同步回跳**：买家付完跳回 `return_url`（带同一套签名参数）；回跳不是支付终态，终态只认通知或 `api.php act=order`。
+- **失败提示**：`submit.php` 失败为 HTTP 400 单行纯文本，`mapi.php` 为 `{code:-1,msg}`；按 `msg` 区分「未开通渠道 / 金额不合法 / 保证金未缴清 / 暂停接单 / 渠道暂不可用（可重试）」。保证金与投诉限制是商户侧状态，不是平台故障。
+- **退款**：本协议面不提供退款接口；在门户「开放平台 → 交易流水」提交退款申请工单，或联系对接人，由平台核实后原路退回。
 
 ### 8.4 已核对客户端（源码 / wire fixture，非真实首单）
 

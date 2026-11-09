@@ -25,6 +25,8 @@
 | `OPEN_API_APP_SUSPENDED` | 403 | 应用被暂停：商家 API 全部不可用。**实际拿到的是 `401`**——应用状态非 `ACTIVE` 时，密钥解析在**鉴权阶段**就中性失败（不区分「应用不存在」与「应用被暂停」，防枚举），这个 `403` 只在极窄的竞态窗口（鉴权通过后状态才变更）才可能返回。存量订单的查询/关单/退款同样打不通，转平台人工通道。 |
 | `OPEN_API_APP_REVOKED` | 403 | 应用被吊销（**永久终态**）：商家 API 全部不可用，退款仅保留平台人工通道。同上，**实际拿到的是 `401`**。 |
 | `OPEN_API_MERCHANT_INACTIVE` | 403 | 商家准入状态非 ACTIVE：**新增**下单/支付尝试被拒；存量订单不受影响。 |
+| `OPEN_API_MERCHANT_DEPOSIT_BLOCKED` | 409 | 商户保证金未缴清（宽限期已过）：**新增下单/重拉起**被拒；存量订单查询、关单、退款与结算读回**不受影响**。到卖家后台「收款信息」补缴，恢复后自动放行；不要重复提交同一笔。 |
+| `OPEN_API_MERCHANT_COMPLAINT_HOLD` | 409 | 商户存在未结案的投诉经营限制：**新增下单/重拉起**被拒；存量订单查询、关单、退款与结算读回**不受影响**。联系平台处理；不要重复提交同一笔。 |
 | `OPEN_API_BODY_INVALID` | 400 | 请求体不是合法 JSON，或形状/枚举/边界违规（**含未知字段**）。 |
 | `OPEN_API_PAYLOAD_TOO_LARGE` | 413 | 请求体超过流式硬上限。精简 `attach`/`description`。 |
 | `OPEN_API_REPLAY` | 409 | nonce 重放命中。每次请求用新的 nonce。 |
@@ -35,9 +37,12 @@
 | `OPEN_API_CLOSE_NOT_COMPLETED` | 409 | 关单未完成：支付机构未完成本次关单，**订单仍可能处于可支付状态**（平台不会把订单本地判死）。稍后重试关单，或等订单到期自动关闭（到期后不可支付）。**可重试**，但不要紧循环。 |
 | `OPEN_API_CHANNEL_UNAVAILABLE` | 422 | 通道存在但链路未放行（闸门关闭或前置未齐）。**可预期的正常拒绝**，不要重试刷量。 |
 | `OPEN_API_MERCHANT_CHANNEL_UNAVAILABLE` | 409 | 商户单所选支付方式对当前商家暂不可用（商户能力/渠道子状态/平台开关）。**可换支付方式重试**；不代表平台整体停服。 |
-| `OPEN_API_MERCHANT_SUB_OPENID_INVALID` | 422 | 商户微信单 `subOpenid` 缺失/形态非法，或支付宝单/平台单携带了 `subOpenid/subAppid`。按文末请求字段约束传参。 |
-| `OPEN_API_MERCHANT_APPID_UNAVAILABLE` | 403 | 商户微信公众号 appid 尚未绑定或未完成读回确认：微信支付暂不可用。先完成商户收银台配置。 |
-| `OPEN_API_MERCHANT_APPID_INVALID` | 422 | `subAppid` 形态非法、使用了平台服务号 appid，或与商户已绑定 appid 不一致。 |
+| `OPEN_API_MERCHANT_SUB_OPENID_INVALID` | 422 | 商户微信单 `subOpenid` 形态非法，或支付宝单/平台单携带了 `subOpenid/subAppid`。不传 `subOpenid` 不是错误（＝平台桥接页）；按文末请求字段约束传参。 |
+| `OPEN_API_MERCHANT_APPID_UNAVAILABLE` | 403 | 平台微信配置尚未读回生效：微信支付暂不可用。等待门户显示「已开通」，或联系对接人核对平台配置。 |
+| `OPEN_API_MERCHANT_APPID_INVALID` | 422 | `subAppid` 形态非法、使用了未经平台统一配置证明的平台 appid，或与商户已绑定 appid 不一致。 |
+| `OPEN_API_MERCHANT_RISK_BLOCKED` | 409 | 商户单支付前风险校验未通过（中性文案，不暴露规则/阈值）。**不要原样循环重试**；可换支付方式，或核对订单/买家信息后由商户决定是否重试。 |
+| `OPEN_API_MERCHANT_BUYER_ID_INVALID` | 422 | `buyerId`/`buyerPhone` 形态非法，或平台单携带了商户专用买家标识。按请求字段约束传参；**平台单不得携带**这两个字段。 |
+| `OPEN_API_MERCHANT_BUYER_ID_REQUIRED` | 422 | 商户支付宝单在开启强制买家标识时缺少 `buyerId`/`buyerPhone`。按商户通知补齐买家标识后重试。 |
 | `OPEN_API_CHANNEL_UNSUPPORTED` | 422 | 通道不受支持（预留词表位）。 |
 | `OPEN_API_SCOPE_CHANNEL_MISMATCH` | 422 | 申报交易形态与通道绑定不符（含越界/双申报缺省/空申报）。 |
 | `OPEN_API_FEE_BEARER_DISABLED` | 422 | 买家承担服务费未开放（灰度/回滚闸门关闭）。**只挡新 BUYER 单**；查单/退款/已有订单读取不受影响。需要该能力请关注门户公告，不要改换参数绕过。 |
@@ -96,6 +101,8 @@
     "OPEN_API_APP_SUSPENDED": 403,
     "OPEN_API_APP_REVOKED": 403,
     "OPEN_API_MERCHANT_INACTIVE": 403,
+    "OPEN_API_MERCHANT_DEPOSIT_BLOCKED": 409,
+    "OPEN_API_MERCHANT_COMPLAINT_HOLD": 409,
     "OPEN_API_PAYLOAD_TOO_LARGE": 413,
     "OPEN_API_BODY_INVALID": 400,
     "OPEN_API_REPLAY": 409,
@@ -107,6 +114,9 @@
     "OPEN_API_MERCHANT_SUB_OPENID_INVALID": 422,
     "OPEN_API_MERCHANT_APPID_UNAVAILABLE": 403,
     "OPEN_API_MERCHANT_APPID_INVALID": 422,
+    "OPEN_API_MERCHANT_RISK_BLOCKED": 409,
+    "OPEN_API_MERCHANT_BUYER_ID_INVALID": 422,
+    "OPEN_API_MERCHANT_BUYER_ID_REQUIRED": 422,
     "OPEN_API_CHANNEL_UNSUPPORTED": 422,
     "OPEN_API_SCOPE_CHANNEL_MISMATCH": 422,
     "OPEN_API_STATE_INVALID": 409,

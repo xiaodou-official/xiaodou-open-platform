@@ -20,10 +20,20 @@
 | `OPEN_API_IDEMPOTENCY_CONFLICT` | 409 | 同单号异内容：**先查单**，不要换号重下单 |
 | `OPEN_API_RESOURCE_NOT_FOUND` | 404 | 中性不存在（含跨应用/跨商家） |
 | `OPEN_API_STATE_INVALID` | 409 | 状态机非法迁移或终态冲突 |
+| `OPEN_API_CLOSE_NOT_COMPLETED` | 409 | 关单未完成：通道未完成本次关单，订单仍可能可支付；稍后重试关单或等到期自动关闭，不要紧循环 |
 | `OPEN_API_CHANNEL_UNAVAILABLE` | 422 | 通道链路未放行：**正常拒绝**，不要重试刷量 |
 | `OPEN_API_MERCHANT_CHANNEL_UNAVAILABLE` | 409 | 商户单所选支付方式对该商家暂不可用：**可换支付方式重试**，平台未整体停服 |
+| `OPEN_API_MERCHANT_DEPOSIT_BLOCKED` | 409 | 商户保证金未缴清（宽限期已过）：补缴后自动恢复；不要重复提交同一笔 |
+| `OPEN_API_MERCHANT_COMPLAINT_HOLD` | 409 | 商户存在未结案投诉的经营限制：联系平台处理；不要重复提交同一笔 |
+| `OPEN_API_MERCHANT_SUB_OPENID_INVALID` | 422 | 商户微信单 `subOpenid` 形态非法，或支付宝单/平台单携带 `subOpenid/subAppid`；不传 `subOpenid` 是平台桥接形态，不是错误 |
+| `OPEN_API_MERCHANT_APPID_UNAVAILABLE` | 403 | 平台微信配置尚未读回生效：等待门户「已开通」或联系对接人 |
+| `OPEN_API_MERCHANT_APPID_INVALID` | 422 | `subAppid` 形态非法、使用了非平台统一配置的 appid，或与已绑定 appid 不一致 |
+| `OPEN_API_MERCHANT_RISK_BLOCKED` | 409 | 商户单支付前风控拦截（中性文案）：不要原样循环重试；可换支付方式或核对订单/买家信息 |
+| `OPEN_API_MERCHANT_BUYER_ID_INVALID` | 422 | `buyerId`/`buyerPhone` 形态非法，或平台单携带商户专用买家标识 |
+| `OPEN_API_MERCHANT_BUYER_ID_REQUIRED` | 422 | 强制买家标识模式下商户支付宝单缺 `buyerId`/`buyerPhone`：补齐后重试 |
 | `OPEN_API_CHANNEL_UNSUPPORTED` | 422 | 通道不受支持（预留词表位） |
 | `OPEN_API_SCOPE_CHANNEL_MISMATCH` | 422 | 申报交易形态与通道绑定不符 |
+| `OPEN_API_FEE_BEARER_DISABLED` | 422 | 买家承担服务费未开放（灰度/回滚闸门关闭）：只挡新 BUYER 单，查单/退款/历史订单不受影响 |
 | `OPEN_API_LIMIT_EXCEEDED` | 422 | 限额越界：信封带**触发面**——订单/尝试腿=`details.scopes`（数组）；**退款累计腿**=`details.scope` 单值 `REFUND_CUMULATIVE` + `outRefundNo`。先关掉在途未支付订单；限额无自助查询面，需调整走官网反馈渠道（附 `requestId`） |
 | `OPEN_API_RATE_LIMITED` | 429 | 频率限流：指数退避 + 复用 `requestId`；额度窗口见响应头 `RateLimit-*` / `Retry-After` |
 | `OPEN_API_PROVIDER_REJECTED` | 502 | 支付机构拒绝：先查单核对状态，不要原样无限重试 |

@@ -1,6 +1,6 @@
 ---
 name: xiaodou-open-platform-integration
-description: 小豆支付开放平台商家接入 Skill。用于帮助商家开发者（及其 AI 编码助手）把开放平台支付接起来：RSA2 请求签名（XD-Signature-v1）、下单/重拉起/查单/关单/退款、收银页终端能力矩阵（PC 扫码 / 手机支付宝手势主按钮 / 手机微信外推荐路径 / 微信内零点击）、平台事件通知验签（XD-Webhook-v1）与 eventId 去重、**平台响应验签（XD-Response-v1）**、错误码排障、上线检查清单与凭证轮换（含密钥标识 kid 格式与本地派生）；也覆盖**新渠道商户自有收银台的微信 JSAPI 公众号配置**（网页授权域名、JSAPI 支付授权目录、appid 绑定与读回、subOpenid 取用）。触发词：开放平台接入、商家 API、XD-Signature-v1、XD-Response-v1、XD-Webhook-v1、qrCode 渲染、payUrl 中转链、收银页分端、多到账账号、比例分账、上线检查清单、密钥轮换、kid 密钥标识、公钥指纹、notifyUrl 回调地址、returnUrl 返回商家、商家小票、配置提交即生效、feeProjection 费率投影、易支付/彩虹支付插件兼容、submit.php、mapi.php、api.php、Sub2API、New API、微信 JSAPI 公众号配置、网页授权域名、JSAPI 支付授权目录、subOpenid、商户自有收银台。
+description: 小豆支付开放平台商家接入 Skill。用于帮助商家开发者（及其 AI 编码助手）把开放平台支付接起来：RSA2 请求签名（XD-Signature-v1）、下单/重拉起/查单/关单/退款、收银页终端能力矩阵（PC 扫码 / 手机支付宝手势主按钮 / 手机微信外推荐路径 / 微信内零点击）、平台事件通知验签（XD-Webhook-v1）与 eventId 去重、**平台响应验签（XD-Response-v1）**、错误码排障、上线检查清单与凭证轮换（含密钥标识 kid 格式与本地派生）；也覆盖**新渠道商户的微信支付开通与拉起**（平台统一配置 appid 与授权目录、开通前置、subOpenid 取用与页面拉起）。触发词：开放平台接入、商家 API、XD-Signature-v1、XD-Response-v1、XD-Webhook-v1、qrCode 渲染、payUrl 中转链、收银页分端、多到账账号、比例分账、上线检查清单、密钥轮换、kid 密钥标识、公钥指纹、notifyUrl 回调地址、returnUrl 返回商家、商家小票、配置提交即生效、feeProjection 费率投影、易支付/彩虹支付插件兼容、submit.php、mapi.php、api.php、Sub2API、New API、微信支付开通、微信 JSAPI 拉起、subOpenid。
 ---
 
 # 小豆支付开放平台 · 商家接入 Skill
@@ -41,7 +41,7 @@ description: 小豆支付开放平台商家接入 Skill。用于帮助商家开�
 6. **事件必须用原始字节验签 + 按 `eventId` 去重**，成功才回 2xx 且 body 字节正好是 `success`。
 7. **私钥永不进浏览器、不进仓库、不进日志**；费率**不要写死进代码**：入账以每单 `feeProjection` 为准（对外统一档与手续费见仓库 `README.md`），单独约定过的费率与限额以门户「费率说明」页/平台答复为准。
 
-**能力事实（2026-10-17 口径）**：**微信 JSAPI 已开放**——仅限买家在微信内打开收银页时调起；微信外手机浏览器与商家 App 内没有「直接拉起」形态。**比例分账已支持**：`SINGLE` / `ROUND_ROBIN` / `RATIO` 三种方式，`RATIO` 为 2–4 个参与账号、配置面每项 `0 < shareBps < 10000`、合计 10000bps，`RENORMALIZE` 后单笔生效腿可只剩 1 条；查询接口只读返回 `routing.ratios` 配置快照，写面在商家后台。
+**能力事实（2026-11-09 口径）**：**微信 JSAPI 已开放**——仅限买家在微信内打开收银页时调起；微信外手机浏览器与商家 App 内没有「直接拉起」形态。**新渠道商户的微信渠道首次开通**须同时满足「连续 7 个自然日每天至少 1 笔成功交易」与「保证金净额 ≥¥168」（只缴 ¥168 不能免 7 天；已开微信渠道的商户不受影响）；微信渠道开通与实名只在**北京时间 08:00–18:00** 开放。建单/重拉起**不传** `subOpenid` 即走平台桥接页（推荐），携带 `subOpenid` 为自管形态。**商户单可选买家标识** `buyerId`/`buyerPhone`（仅摘要落库、不参与业务摘要；平台单禁止；商户支付宝单在强制模式下二选一必传）。**比例分账已支持**：`SINGLE` / `ROUND_ROBIN` / `RATIO` 三种方式，`RATIO` 为 2–4 个参与账号、配置面每项 `0 < shareBps < 10000`、合计 10000bps，`RENORMALIZE` 后单笔生效腿可只剩 1 条；查询接口只读返回 `routing.ratios` 配置快照，写面在商家后台。
 
 ## 工作流
 
@@ -53,7 +53,7 @@ description: 小豆支付开放平台商家接入 Skill。用于帮助商家开�
 ⑤ 读 references/error-codes.md      → 按 code 分派错误，不要按 message 判错
 ⑥ 读 references/go-live-checklist.md → 上线前逐条自检（平台不提供沙箱）
 ⑦ 读 references/key-management.md   → 生成/轮换/停用/应急吊销；注意轮换是原子的
-⑧ 新渠道商户收微信时读 references/wechat-jsapi-setup.md → 公众号、网页授权域名、JSAPI 支付授权目录、appid 绑定与 subOpenid
+⑧ 新渠道商户收微信时读 references/wechat-jsapi-setup.md → 平台统一配置（无需自绑公众号）、开通前置、subOpenid 与拉起
 ```
 
 ## 资产
