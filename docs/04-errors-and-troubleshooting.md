@@ -44,6 +44,9 @@
 | `OPEN_API_MERCHANT_BUYER_ID_INVALID` | 422 | `buyerId`/`buyerPhone` 形态非法，或平台单携带了商户专用买家标识。按请求字段约束传参；**平台单不得携带**这两个字段。 |
 | `OPEN_API_MERCHANT_BUYER_ID_REQUIRED` | 422 | 商户支付宝单在开启强制买家标识时缺少 `buyerId`/`buyerPhone`。按商户通知补齐买家标识后重试。 |
 | `OPEN_API_CHANNEL_UNSUPPORTED` | 422 | 通道不受支持（预留词表位）。 |
+| `OPEN_API_TEST_MODE_NOT_ALLOWED` | 422 | 生产应用不允许 `test=true`。测试单只能由沙箱应用或平台受控标注写入；不要在正式应用上携带 `test`。 |
+| `OPEN_API_SANDBOX_UNAVAILABLE` | 422 | 沙箱环境未开启。沙箱应用暂不可下单，等待平台开闸或联系对接人。 |
+| `OPEN_API_SANDBOX_APP_REQUIRED` | 422 | 当前应用不是沙箱应用。模拟支付/退款端点只对沙箱应用开放；正式应用请走真实交易链路。 |
 | `OPEN_API_SCOPE_CHANNEL_MISMATCH` | 422 | 申报交易形态与通道绑定不符（含越界/双申报缺省/空申报）。 |
 | `OPEN_API_FEE_BEARER_DISABLED` | 422 | 买家承担服务费未开放（灰度/回滚闸门关闭）。**只挡新 BUYER 单**；查单/退款/已有订单读取不受影响。需要该能力请关注门户公告，不要改换参数绕过。 |
 | `OPEN_API_LIMIT_EXCEEDED` | 422 | 限额越界。信封带**触发面**：订单/尝试腿=`details.scopes`（数组）；**退款累计腿**=`details.scope` 单值 `REFUND_CUMULATIVE` + `outRefundNo`——枚举与处置见 [费率与限额](./07-fees-and-limits.md)。限额值不在任何页面展示：先关掉不再支付的在途订单；需要调整走官网反馈渠道（附 `requestId`）。 |
@@ -117,6 +120,9 @@
     "OPEN_API_MERCHANT_RISK_BLOCKED": 409,
     "OPEN_API_MERCHANT_BUYER_ID_INVALID": 422,
     "OPEN_API_MERCHANT_BUYER_ID_REQUIRED": 422,
+    "OPEN_API_TEST_MODE_NOT_ALLOWED": 422,
+    "OPEN_API_SANDBOX_UNAVAILABLE": 422,
+    "OPEN_API_SANDBOX_APP_REQUIRED": 422,
     "OPEN_API_CHANNEL_UNSUPPORTED": 422,
     "OPEN_API_SCOPE_CHANNEL_MISMATCH": 422,
     "OPEN_API_STATE_INVALID": 409,

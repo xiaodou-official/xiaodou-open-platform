@@ -104,7 +104,7 @@ TQIDAQAB
 实践建议：
 
 - **重试必须复用同一个 `requestId`**（网络超时、5xx 重试场景）。换 `requestId` 重发等于新请求，可能造成重复下单。注意**请求体也要逐字节相同**：同一个 `requestId` 换了请求体（哪怕只是「不传 body」变成传 `{}`）会拿到 `409 OPEN_API_REQUEST_ID_CONFLICT`。
-- 「同号同内容」里的**内容 = 业务摘要**：`channel`、`tradeScope`、`amountFen`、`currency`、`subject`、`description`、`returnUrl`、`attach`（完整清单见 [API 参考 §2.7](./03-api-reference.md)）——改动其中任何一个再重试，都是「异内容」→ `409`。`payerClientIp` 不在摘要内，重试时按实际情况传不会冲突。
+- 「同号同内容」里的**内容 = 业务摘要**：`channel`、`tradeScope`、`amountFen`、`currency`、`subject`、`description`、`returnUrl`、`attach`（完整清单见 [API 参考 §2.9](./03-api-reference.md)）——改动其中任何一个再重试，都是「异内容」→ `409`。`payerClientIp` 不在摘要内，重试时按实际情况传不会冲突。
 - `outTradeNo` 由你的系统生成，**不要用「时间戳+随机数」当订单号后重试**——重试要用同一个号。
 - 遇到 `409` 先查单，**不要盲目换号重试**。
 
@@ -113,6 +113,8 @@ TQIDAQAB
 订单状态：`CREATED` → `PAYING` → `SUCCEEDED`，或收敛到 `CLOSED` / `FAILED`；另有 `UNKNOWN`（状态不确定，**不判死**）。退款状态：`REQUESTED` → `PENDING` → `SUCCEEDED` / `FAILED`，另有 `UNKNOWN`。
 
 **`CLOSED` / `FAILED` 不是终点（最容易写错的一条）**：支付机构随后确认到账时，平台会把订单**提升为 `SUCCEEDED`** 并推送 `PAYMENT_SUCCEEDED`——关单与到账竞态一律以支付机构为准。所以这两个状态**不能建成吸收态**，收到 `PAYMENT_SUCCEEDED` 就按到账处理。
+
+**按单支付窗（2026-11-16）**：建单可传 `timeExpireSeconds`（300–86400 整数秒）缩短/延长该单支付窗；不传沿用渠道缺省。它只是发给支付机构的业务超时，**不等于关单能力**：到期后仍可能完成支付（平台会按迟到支付提升状态并推 `PAYMENT_SUCCEEDED`），因此恢复库存必须以 `expireAt` + 事件通知为准，并对迟到支付做原路退款。
 
 **可信边界（最容易踩的一条）**：
 
@@ -152,10 +154,11 @@ TQIDAQAB
 
 ## 10. 联调支持边界（重要）
 
-平台**暂不提供**沙箱、测试应用与回调模拟器。可用的替代路径：
+平台提供**沙箱应用**（需平台审批开通，未全量开放）与下列替代路径：
 
-1. **本地 demo**（[`demo/h5-cashier/`](../demo/h5-cashier/)，**只在公开仓提供；不在门户的两个下载包内**）：loopback + mock，全链跑通，不连生产支付机构。
-2. **上线检查清单**（[`11-go-live-checklist.md`](./11-go-live-checklist.md)）：逐条自检，上线前必须全过。
-3. **首次生产首单人工陪跑**：通过官网反馈渠道提交，平台侧协助（**不承诺 SLA**）。
+1. **沙箱应用**：由平台签发的独立 `appId` 与密钥，调用下单/退款返回本地模拟结果，**不连接支付机构、不产生真实资金**。沙箱单可查询、关闭、模拟支付（`POST /payments/{outTradeNo}/sandbox`）与模拟退款，并会按同一 webhook 签名规则投递到沙箱应用自己的回调地址。沙箱**不验证**生产权限、费率与渠道能力，沙箱通过不代表可以接真实流量。
+2. **本地 demo**（[`demo/h5-cashier/`](../demo/h5-cashier/)，**只在公开仓提供；不在门户的两个下载包内**）：loopback + mock，全链跑通，不连生产支付机构。
+3. **上线检查清单**（[`11-go-live-checklist.md`](./11-go-live-checklist.md)）：逐条自检，上线前必须全过。
+4. **首次生产首单人工陪跑**：通过官网反馈渠道提交，平台侧协助（**不承诺 SLA**）。
 
-> 本地 demo 与任何「mock 通过」都**不能**替代生产首单验证：mock 只证明你的签名与解析没问题，不证明资金链通。
+> 沙箱、本地 demo 与任何「mock 通过」都**不能**替代生产首单验证：它们只证明你的签名与解析没问题，不证明资金链通。

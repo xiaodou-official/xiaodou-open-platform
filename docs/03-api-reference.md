@@ -35,7 +35,7 @@
 - 失败：`{ "code": "...", "message": "...", "requestId": "..." }` —— 失败**永不**返回 2xx，`code` **只在总表内**（平台侧内部故障投影为 `503 OPEN_API_GUARD_UNAVAILABLE`，不会把内部码透给你）。
 - `details` 字段**只在两个码上出现**：① **平台边缘腿**的来源 IP 拒绝（`403 OPEN_API_SOURCE_IP_REJECTED`）带 `details.reason`（七种取值见 [安全红线 · 请求来源](./09-security-redlines.md)），**不会回显**平台观测到的地址；② **限额越界**（`OPEN_API_LIMIT_EXCEEDED`，HTTP 状态见 [错误码与排障](./04-errors-and-troubleshooting.md) 总表）带**触发面**——订单/尝试腿=`details.scopes`（枚举见 [费率与限额](./07-fees-and-limits.md)），**退款累计腿**=`details.scope` 单值 `REFUND_CUMULATIVE` + `outRefundNo`。**应用白名单腿**的同一个 `403` 只有三字段。
 
-**通用约定**：金额整数分（`Fen`）；创建订单/创建退款是**严格模式**——多传 schema 之外的字段直接 `400`；重拉起端点可选携带 `subOpenid/subAppid`（未知字段容忍忽略），其余端点（查单、关单、退款查询）**不接受请求体**，带了也不会被解析（不要指望它报错）。错误码只取 [错误码与排障](./04-errors-and-troubleshooting.md) 的总表。**任何端点**都可能返回 `413`（请求体超过流式上限）；平台侧内部故障一律投影为 **`503 OPEN_API_GUARD_UNAVAILABLE`**（不会出现表外码，也不会有 `500`）；请求列字段约束见 [§2.7](#28-请求字段约束创建订单--创建退款)。
+**通用约定**：金额整数分（`Fen`）；创建订单/创建退款是**严格模式**——多传 schema 之外的字段直接 `400`；重拉起端点可选携带 `subOpenid/subAppid`（未知字段容忍忽略），其余端点（查单、关单、退款查询）**不接受请求体**，带了也不会被解析（不要指望它报错）。错误码只取 [错误码与排障](./04-errors-and-troubleshooting.md) 的总表。**任何端点**都可能返回 `413`（请求体超过流式上限）；平台侧内部故障一律投影为 **`503 OPEN_API_GUARD_UNAVAILABLE`**（不会出现表外码，也不会有 `500`）；请求列字段约束见 [§2.9](#29-请求字段约束创建订单--创建退款)。
 
 ## 2. 端点
 
@@ -45,9 +45,12 @@
 | --- | --- |
 | 成功 | `201`（新建）/ `200`（同 `outTradeNo` 同业务摘要 → 幂等重放，含 `replayed=true`） |
 | 失败 | `400` `401` `403` `409` `422` `429` `502` `503` |
-| 请求体 | `outTradeNo`、`channel`、`currency`、`subject`、**`payerClientIp`** 必填；`amountFen`（SELLER，缺省）或 `merchantAmountFen`（BUYER）二选一必填；`feeBearer`、`tradeScope`、`description`、`attach`、`returnUrl` 可选；**新渠道商户微信单**可选 `subOpenid`（携带＝自管拉起；不携带＝平台桥接页）与 `subAppid`；商户单可选买家标识 `buyerId`/`buyerPhone`（仅摘要落库） |
+| 请求体 | `outTradeNo`、`channel`、`currency`、`subject`、**`payerClientIp`** 必填；`amountFen`（SELLER，缺省）或 `merchantAmountFen`（BUYER）二选一必填；`feeBearer`、`tradeScope`、`description`、`attach`、`returnUrl`、`timeExpireSeconds` 可选；**新渠道商户微信单**可选 `subOpenid`（携带＝自管拉起；不携带＝平台桥接页）与 `subAppid`；商户单可选买家标识 `buyerId`/`buyerPhone`（仅摘要落库） |
 
 要点：
+
+- **按单支付窗**（2026-11-16 起）：可传 `timeExpireSeconds`（300–86400 整数秒），首次建单冻结；显式值优先于平台配置与渠道缺省，**商户直连支付宝也可低于默认 2 小时**。不传时保持现役口径（商户支付宝 2h、商户微信 600s、平台单 1800s）。同 `outTradeNo` 重放时传不同值 → `409 OPEN_API_IDEMPOTENCY_CONFLICT`；不传则沿用已冻结窗口。
+  - **它不是“二维码立即失效”的硬保证**：支付服务方的 `time_expire` 是业务超时，到期后仍可能完成支付；`CLOSED` 也可能被后续 `PAYMENT_SUCCEEDED` 提升。恢复库存请以 `expireAt` + 事件通知为准，并对迟到支付按原路退款处理。
 
 - 同 `outTradeNo` 异业务摘要 → `409`（冲突），**不要换号重试**。
 - **业务幂等重放**（同 `outTradeNo` 同业务摘要，响应含 `replayed=true`）返回的是**订单当前快照**：存在有效支付尝试时含有效 `payUrl`；尝试已终态/过期时 `payUrl` 为空并附 `nextAction=CREATE_ATTEMPT`，且**不回传过期支付材料**。注意与**请求级重放**区分：同 `X-XD-Request-Id` 重发拿到的是**首次响应原件**（当时的状态码与 body），**不等于当前状态**——拿当前状态走查单（见 [接入指南 §4](./02-integration-guide.md)）。
@@ -56,7 +59,7 @@
   - **平台桥接（推荐）**：**不传** `subOpenid`。下单只落库、零当次外呼，下发 `payUrl`（平台收银页），买家在微信内打开后由平台完成服务号 OAuth 与 JSAPI 拉起，商户不需要公众号后台权限；
   - **商户自管**：传买家在**平台公众号**下的 `subOpenid`（`subAppid` 可选，传入时必须等于平台公众号 appid），下发响应另含 `jsapiParams`（`appId/timeStamp/nonceStr/package/signType/paySign`），由商户页面用 `WeixinJSBridge.invoke('getBrandWCPayRequest', jsapiParams)` 拉起。`subOpenid` **不落库**，每次重拉起都要重新提交。
   商户自有 appid 不能用于商户单（`422 OPEN_API_MERCHANT_APPID_INVALID`），平台配置未读回生效返回 `403 OPEN_API_MERCHANT_APPID_UNAVAILABLE`；桥接页只在「平台公众号 appid 已对该商户读回生效」时可用。旧渠道（平台收银页）行为不变。
-- `returnUrl` **属于业务摘要**：同一个 `outTradeNo` 重试时必须**逐字复用它**——传不同值不是「被忽略」，而是 `409 OPEN_API_IDEMPOTENCY_CONFLICT`（摘要成员见 [§2.7](#28-请求字段约束创建订单--创建退款)）。它的目标在首次下单时冻结。
+- `returnUrl` **属于业务摘要**：同一个 `outTradeNo` 重试时必须**逐字复用它**——传不同值不是「被忽略」，而是 `409 OPEN_API_IDEMPOTENCY_CONFLICT`（摘要成员见 [§2.9](#29-请求字段约束创建订单--创建退款)）。它的目标在首次下单时冻结。
 - `payerClientIp` 是**必填**字段：买家客户端的公网 IP，由**你的服务端转交**（填写合法公网 IPv4/IPv6，不要填内网或保留地址）。它用于风控提示，平台不会替你解析代理链；缺失或非法一律 `400`。
 
 ### 2.2 `POST /api/open/v1/payments/{outTradeNo}/attempts` — 重拉起支付尝试
@@ -70,6 +73,7 @@
 要点：
 
 - 语义是「**关旧建新**」：仅关闭处于进行中的旧尝试（状态不确定的尝试按纪律**不判死**），并创建新尝试。
+- **关单处理中不得重拉起**：订单 `closeState=CLOSE_PENDING`（通道已受理关单但未确认）时，本端点返回 `409 OPEN_API_STATE_INVALID`，避免造出第二张可支付码。请先等关单确认（`PAYMENT_CLOSED` / 重试关单）或到期收敛。
 - 返回的是**新材料**：`payUrl` 与 `qrCode` 同批更换，**旧码不可复用**；商户微信单另返回新的 `jsapiParams`。
 - 需要新收款材料时**只用这个端点**，不要重复调用下单接口。
 - 新渠道商户微信单的 `subOpenid` **不落库**：需要自管拉起时每次重拉起都要重新提交；不提交则返回桥接页 `payUrl`（零当次外呼）。
@@ -97,15 +101,31 @@
 | 失败 | `400` `401` `403` `404` `409` `422` `429` `502` `503` |
 | 请求体 | 无（写方法仍须 `Content-Type: application/json`） |
 
-`closeState` 取值：`CLOSE_REQUESTED`（已受理关闭）/ `ALREADY_CLOSED`（本就已关闭）/ `UNKNOWN_KEPT`（结果不确定，**维持原状不判死**）/ `PROVIDER_PAID_CONFLICT`（关单过程中发现已支付，订单转成功）。
+`closeState` 取值：`CLOSE_REQUESTED`（通道已**确认关闭**，订单终态 `CLOSED`，可释放库存）/ `CLOSE_PENDING`（通道已受理但仍在处理中，订单保持 `CREATED/PAYING`，**不得释放库存**，稍后重试）/ `ALREADY_CLOSED`（本就已关闭）/ `UNKNOWN_KEPT`（结果不确定，**维持原状不判死**）/ `PROVIDER_PAID_CONFLICT`（关单过程中发现已支付，订单转成功）。
 
-> **`closeState` 只出现在 `200` 回执里**。若平台在**受理关单之前**就已判定该单已支付，走的是另一条路径：直接返回 `409` `OPEN_API_STATE_INVALID`，错误体只有 `code`/`message`/`requestId`，**不含 `closeState`**；`PROVIDER_PAID_CONFLICT` 只出现在「平台与支付机构在关单过程中同时收敛到终态」的并发场景，且以 `200` 回执返回。两条路径的正确动作相同：**先查单确认终态，不要重试关单**。
+> **`closeState` 只出现在 `200` 回执里**。若平台在**受理关单之前**就已判定该单已支付，走的是另一条路径：直接返回 `409` `OPEN_API_STATE_INVALID`，错误体只有 `code`/`message`/`requestId`，**不含 `closeState`**；`PROVIDER_PAID_CONFLICT` 只出现在「平台与支付机构在关单过程中同时收敛到终态」的并发场景，且以 `200` 回执返回。这两条路径的正确动作相同：**先查单确认终态，不要盲目重试关单**。`CLOSE_PENDING` 是例外：通道已受理但未确认，按下一节用新的请求 ID 重试是预期动作。
 
 要点：关闭前平台会先与支付机构确认**未支付**才真正关闭；**已支付的订单不会被盲目关掉**。
 
+> **关单不是“本地阻断”**：平台不会在支付机构明确“关单未完成”时把订单本地判死。渠道拒绝时返回 `409 OPEN_API_CLOSE_NOT_COMPLETED`，订单在 `expireAt` 前**仍可能可支付**；不要按已关闭处理，也不要高频重试。已经下发的官方收款码只有支付机构关单成功（或交易到期）才会失效——本地状态改不了它。
+
+> **通道回「处理中」（P）不是关闭完成**：平台返回 `200` + `closeState=CLOSE_PENDING`，订单保持 `CREATED/PAYING`，不会产生 `PAYMENT_CLOSED`。请继续占用库存，并用**新的 `X-XD-Request-Id`** 重试关单端点——平台会先查关单结果，不会重复发关单；平台后台也会定时确认，确认关闭后才推 `PAYMENT_CLOSED`。收到 `PAYMENT_CLOSED` 或订单快照 `status=CLOSED` 后才可以释放库存。
+
 > **未派发订单**（如微信 JSAPI 买家从未唤起、支付机构侧尚无该笔交易）按「未派发」判据**零外呼本地关闭**，返回 `200` + `closeState=CLOSE_REQUESTED`；不会把支付机构的「交易不存在」折成 `503 OPEN_API_GUARD_UNAVAILABLE`。已派发订单的关单语义不变。
 
-### 2.5 `POST /api/open/v1/refunds` — 创建退款（业务幂等）
+### 2.5 `POST /api/open/v1/payments/{outTradeNo}/sandbox` — 沙箱模拟支付
+
+| 项 | 值 |
+| --- | --- |
+| 成功 | `200`（订单快照 + `action`） |
+| 失败 | `400` `401` `403` `404` `409` `422` `429` `503` |
+| 请求体 | `action` 必填：`PAY_SUCCESS` / `PAY_FAILED` |
+
+**只对沙箱应用开放**：不调用支付机构、不产生真实资金。`PAY_SUCCESS` 把订单推进 `SUCCEEDED`，并按同一 webhook 签名规则向**沙箱应用自己**配置的回调地址投递 `PAYMENT_SUCCEEDED`；`PAY_FAILED` 只把当前可推进的支付尝试置 `FAILED`（订单保持可支付，可重新发起尝试后再模拟）。同一订单重复 `PAY_SUCCESS` 幂等返回当前快照，不会重复投递 webhook。
+
+正式应用调用返回 `422 OPEN_API_SANDBOX_APP_REQUIRED`；平台未开启沙箱时返回 `422 OPEN_API_SANDBOX_UNAVAILABLE`。沙箱订单只能查询、关闭、模拟退款，**不能转正式交易、不参与结算与对账**。
+
+### 2.6 `POST /api/open/v1/refunds` — 创建退款（业务幂等）
 
 | 项 | 值 |
 | --- | --- |
@@ -115,7 +135,7 @@
 
 要点：仅**支付成功**的订单可退；累计退款不得超过实付（失败的退款不占额度）；受理后被支付机构拒绝返回 `502`；传输不确定时状态为 `UNKNOWN`（**不判死**，等事件或退查收敛）。
 
-### 2.6 `GET /api/open/v1/refunds/{outRefundNo}` — 查询退款
+### 2.7 `GET /api/open/v1/refunds/{outRefundNo}` — 查询退款
 
 | 项 | 值 |
 | --- | --- |
@@ -126,7 +146,7 @@
 
 只读本地权威退款状态，不返回内部材料与摘要。返回投影中的 `replayed` 恒为 `true`（表示这是既有记录的投影），**不要**把它解读为「发生过幂等重放」。
 
-### 2.7 `GET /api/open/v1/settlement/accounts` — 查询到账账号与收款分配
+### 2.8 `GET /api/open/v1/settlement/accounts` — 查询到账账号与收款分配
 
 | 项 | 值 |
 | --- | --- |
@@ -136,7 +156,7 @@
 
 只读返回你的**到账账号列表**（主体名称、商户号、银行卡尾号 4 位）与**当前收款分配**（方式、参与账号与顺序）。比例分账（`mode=RATIO`）时同时返回配置面的 `ratios`（参与账号 2–4 个，每项 `0 < shareBps < 10000`，合计 10000bps）——它是配置快照，不是每单实时重算；单笔生效腿按该单可用账号与 `unavailablePolicy` 决定。收款方式的**设置**在商家后台完成，本接口只读、不接受任何写参数。字段口径与分配边界见[到账账号与收款分配](./14-settlement-accounts.md)。
 
-### 2.8 请求字段约束（创建订单 / 创建退款）
+### 2.9 请求字段约束（创建订单 / 创建退款）
 
 下表是**逐字硬约束**（不是建议）：任何一条不满足返回 `400 OPEN_API_BODY_INVALID`——**不是** `422`。`422` 只用于通道、申报形态与平台限额（见 [费率与限额](./07-fees-and-limits.md)）。
 
@@ -151,6 +171,7 @@
 | `description` | 可选，≤ **256** 字符 |
 | `attach` | 可选，≤ **256** 字符；按事件**原样回带**（首尾空白会被去掉） |
 | `returnUrl` | 可选，绝对 **`https`**（不得带 userinfo、不得带 query/fragment），≤ **512** 字符 |
+| `timeExpireSeconds` | 可选，**300–86400 的整数秒**；只影响首次建单并冻结（同 `outTradeNo` 重放不传沿用原窗、显式传不同值 `409`）；显式值优先于平台配置与渠道缺省，**商户直连支付宝可低于默认 2 小时**。**业务超时，不是主动关单**：到期后仍可能完成支付，恢复库存不能只依赖该字段 |
 | `payerClientIp` | 必填，**合法公网** IPv4/IPv6——内网 / 保留段 / 文档示例段（`10/8`、`172.16/12`、`192.168/16`、`127/8`、CGNAT、`203.0.113/24` 等）一律拒绝 |
 | `subOpenid` | 仅新渠道商户微信单：16–128 位 `A-Z a-z 0-9 _ -`；`WECHAT_H5` 商户单可选（不传＝平台桥接页）、支付宝/平台单禁止出现；不落库、不进日志/查询 |
 | `subAppid` | 可选，`wx` + 16 位十六进制；如传必须等于**平台统一配置的公众号 appid**（商户自有 appid 一律拒绝） |
@@ -209,6 +230,7 @@
     "/payments/{outTradeNo}",
     "/payments/{outTradeNo}/attempts",
     "/payments/{outTradeNo}/close",
+    "/payments/{outTradeNo}/sandbox",
     "/refunds",
     "/refunds/{outRefundNo}",
     "/settlement/accounts"
@@ -316,6 +338,7 @@
       "subAppid",
       "subOpenid",
       "subject",
+      "timeExpireSeconds",
       "tradeScope"
     ],
     "CreateRefundRequest": [

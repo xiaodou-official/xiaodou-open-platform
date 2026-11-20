@@ -50,7 +50,7 @@ XD-Webhook-v1
 
 **两个金额字段别用混**：`grossAmountFen` 恒为**关联订单总额**；`eventAmountFen` 是**本事件对应的金额**——订单事件里**只有 `PAYMENT_SUCCEEDED` 才有实付金额，关闭/失败事件恒为 `0`**；退款事件里是退款金额。落账以 `grossAmountFen`（订单总额）为准，`eventAmountFen` 只在该事件确实发生资金变动时使用。
 
-**`reason` 是订单关闭原因的子集**：事件里只会出现 `EXPIRED` / `MERCHANT_CLOSED` / `PROVIDER_CLOSED` 三个值。`CLOSE_REQUESTED` 是关单请求的中间态（「已受理」），**不会**出现在事件体里——关单真正生效时产生的事件是 `PAYMENT_CLOSED`。其余事件类型的 `reason` 为空，请对空值做兼容。
+**`reason` 是订单关闭原因的子集**：事件里只会出现 `EXPIRED` / `MERCHANT_CLOSED` / `PROVIDER_CLOSED` 三个值。`closeState=CLOSE_PENDING` 表示支付机构已受理但尚未确认关闭，订单保持 `CREATED/PAYING`，**不会**产生 `PAYMENT_CLOSED`；只有关单查询确认关闭后才产生 `PAYMENT_CLOSED`（`reason` 为 `MERCHANT_CLOSED` 或 `EXPIRED`）。其余事件类型的 `reason` 为空，请对空值做兼容。
 
 ## 6. 落账骨架
 

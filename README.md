@@ -26,7 +26,7 @@
 
 **已兼容 Sub2API 与 New API**：[Sub2API](https://github.com/Wei-Shaw/sub2api)（主动查单走 `POST api.php`）与 [New API](https://github.com/QuantumNous/new-api)（建单走 `POST submit.php` 表单）的用户，把同样的网关地址 / 商家 ID / 商户密钥填进它们内置的易支付配置即可，不用改代码；两者的通知与回跳都按同一套 V1 签名规则验签。
 
-费用**全平台统一一档**：平台服务费 2.25%（商家实收 97.75%），手续费 0.01 元起；每一单的准确金额仍以响应里的 `feeProjection` 为准。 服务费**默认从商家结算款内扣（卖家承担）**；买家承担为灰度能力（2026-10-20 起已开通，仍受单笔上限与平台闸门约束），以订单接口返回为准。**入驻、开通、接入对接全程免费**：没有搭建费、入驻费、开通费，也不另收通道费，没有任何一次性收费。
+费用口径：单一档、不按渠道分档。平台服务费 2.80%（商家实收 97.20%；存量商户按其冻结费率），手续费 0.01 元起；每一单的准确金额仍以响应里的 `feeProjection` 为准（存量商户按其冻结费率，单独约定以商家后台「费率说明」页为准）。 服务费**默认从商家结算款内扣（卖家承担）**；买家承担为灰度能力（2026-10-20 起已开通，仍受单笔上限与平台闸门约束），以订单接口返回为准。**入驻与接入免费**：不收搭建费、入驻费、通道费；**B 方案 0 开户费**、按规则缴纳保证金（旧渠道微信门槛 ¥168，旧渠道支付宝暂未开放）；**A 方案（新渠道直收）** 收取一次性服务开通费 **¥475（支付宝）/ ¥1,520（微信）**（原价 ¥500 / ¥1,600），其费率与适用范围以商户门户开通页签署页回显为准。
 
 这个仓库就是它的**全部接入资料**：15 篇文档、四种语言的签名示例、一个能跑起来的本地演示，还有一份可以直接丢给 AI 编码助手（Claude Code、Codex 之类）的 Skill。**跟你在商家后台看到的是同一份内容。**
 
@@ -106,6 +106,8 @@
 | `GET /api/open/v1/refunds/{outRefundNo}` | 查退款 |
 | `GET /api/open/v1/settlement/accounts` | 查到账账号与收款分配（只读：有哪些到账账号、当前按什么规则分；收款方式的设置在商家后台） |
 
+> **沙箱应用**另有 1 个模拟支付端点 `POST /api/open/v1/payments/{outTradeNo}/sandbox`（`action=PAY_SUCCESS|PAY_FAILED`），只对平台审批开通的沙箱应用开放，不产生真实资金；沙箱订单的退款仍走 `POST /api/open/v1/refunds`，由平台本地模拟。
+
 除上面七个签名接口外，另有一条**易支付 / 彩虹支付协议兼容**接入面（资金链同一条）：在给到你的网关地址下，按该协议惯例提供 `submit.php`（表单收单）、`mapi.php`（程序化收单）与 `api.php`（订单 / 商户查询）**多种协议接口**——系统里已装易支付 / 彩虹支付类插件的商家**不用改代码**就能切过来，见[易支付协议兼容接入](./docs/13-epay-compat-integration.md)。
 
 **收款材料有两种标准用法**：在**你自己的电脑网页**上把官方收款码（`qrCode`，只有支付宝渠道会给）画成二维码；或者把我们的收银页地址（`payUrl`）画成二维码、或者直接 `302` 跳过去。细节见[收银页对接](./docs/06-cashier-integration.md)。
@@ -129,7 +131,7 @@
 | **个人网站接入** / **个人网站收款** / 个人用户接入支付宝微信 | 网站只在**服务器端**调用七个接口；页面、商品、发货都留在你自己的网站。个人主体进件后接口与其他主体一致（见下方「个人网站如何接入支付宝 / 微信支付」） |
 | **个人接入支付 API** / **支付接口 API** | 就是[接口一览](#接口一览)里的七个接口：下单、重拉、查单、关单、退款、查退款、查到账账号；请求签名 `XD-Signature-v1`，四语言示例在 `examples/` |
 | **收款通道** / 收款接口 / 支付通道 | 就是本仓这七个接口：一条**服务器对服务器**的收款通道，钱由持牌支付公司收付结算（见[接口一览](#接口一览)） |
-| **免费接入** / 免搭建费 / 不收入驻费 | **入驻、开通、接入对接全程免费**——没有搭建费、入驻费、开通费，也不另收通道费（见[资金与结算](#资金与结算)） |
+| **免费接入** / 免搭建费 / 不收入驻费 | **入驻与接入免费**——不收搭建费、入驻费、通道费；B 方案 0 开户费、按规则缴保证金；A 方案一次性服务开通费 ¥475/¥1,520（见[资金与结算](#资金与结算)） |
 | **H5 支付** / H5 远程支付 | 我们的收银页（`payUrl`）：电脑扫码、手机浏览器、微信里打开，三种情况行为不一样（见[终端能力矩阵](./docs/06-cashier-integration.md)） |
 | **收款码** | 下单响应里的**官方收款码** `qrCode`（只有支付宝渠道给，而且只有**下单那一次响应**里有），可以直接画在你自己的电脑网页上 |
 | **微信收款 / 支付宝收款** | 两条通道的能力面都做好了；**支付宝现在就能接**，**微信 JSAPI 已开放**——买家在微信内打开收银页即可调起微信支付（仅限微信内浏览器；微信外手机浏览器与商家 App 内没有「直接拉起」形态；桌面微信内置浏览器同样按微信内链路处理，若无法完成支付请改用手机微信打开同一链接）。其他通道或交易形态的放行仍以对接人确认为准（放行由平台整体控制、不区分应用，后台没有查询面；未放行时下单返回一个可预期的拒绝，见 [FAQ](#常见问题faq)） |
@@ -150,8 +152,8 @@
 - **央行持牌机构清算，安全可靠的个人和企业支付接口**：付成功就按**下单时定好的分配**当场分账，我们提供的是接入、状态和对账能力。
 - **钱先进哪个账户、按什么规则分，由你的「收款分配」说了算**：可以绑定多个到账账号，单账号全额、按顺序轮流或比例分账（2–4 个参与账号，配置面每项 `0 < shareBps < 10000`、合计 10000bps）；**一单一结、随单冻结**，退款按原订单冻结的分配快照发起回退（实际到账路径以支付服务方原交易与分账合同为准）。查当前分配用 `GET /api/open/v1/settlement/accounts`，详见[到账账号与收款分配](./docs/14-settlement-accounts.md)。
 - **收付和结算都是有支付牌照的支付公司做的**，按设置**自动转到你绑定的银行卡** —— **不用你手动提现**。现在是**次日中午前到账**（含节假日）。
-- **费率公开、全平台统一一档**：平台服务费 2.25%（商家实收 97.75%），手续费 0.01 元起。每一单响应里的 `feeProjection`（带 `ruleVersion`）就是那一单的准确口径，入账用它；如果你有单独约定过的费率，以商家后台「费率说明」页按账户实时展示为准。**限额按主体类型判定**：对公（个体工商户/企业）主体不设平台业务金额上限，实际以支付服务方额度为准；个人主体按平台默认档。具体数字不在文档里写死（没有自助查询面，越界被拒时走官网反馈渠道）。
-- **没有任何一次性收费**：入驻、开通、接入对接**全程免费**——不收搭建费、入驻费、开通费，也不另收通道费；我们会收的费用只有上一条那档按笔计的口径，没有隐藏项目。
+- **费率公开、单一档**：平台服务费 2.80%（商家实收 97.20%；存量商户按其冻结费率），手续费 0.01 元起（存量商户按其冻结费率）。每一单响应里的 `feeProjection`（带 `ruleVersion`）就是那一单的准确口径，入账用它；如果你有单独约定过的费率，以商家后台「费率说明」页按账户实时展示为准。**限额按主体类型判定**：对公（个体工商户/企业）主体不设平台业务金额上限，实际以支付服务方额度为准；个人主体按平台默认档。具体数字不在文档里写死（没有自助查询面，越界被拒时走官网反馈渠道）。
+- **一次性收费只有 A 方案开通费**：入驻与接入免费（不收搭建费、入驻费、通道费）；B 方案 0 开户费、按规则缴保证金；A 方案一次性服务开通费 ¥475/¥1,520（原价 ¥500/¥1,600）。按笔计的服务费只有上一条那一档，没有隐藏项目。
 - 结算周期、到账时间**都会变**：**一律看后台当时显示的**；微信 JSAPI 已开放（仅微信内打开收银页），其他通道或交易形态是否放行以对接人确认为准（后台无查询面）。别抄进你的对外文案或代码常量里。
 
 ## 五分钟上手
@@ -212,13 +214,13 @@ node demo/h5-cashier/smoke.js         # 冒烟自检（含负向用例），打�
 如果你系统里的支付插件只让你填三格——**网关地址、商家 ID、密钥**（有的系统把网关叫「接口地址」或「支付网关」，是同一个值）——那它用的就是这一类老式共享密钥协议，我们的「易支付接口配置」按同一套协议收单：在卖家后台上开通、把页面给的三个值填进那三格就能用，**不用改你系统的代码**。注意网关**不是**「应用凭证」页的接入地址（Base URL，通常 `api.` 开头）。协议细节、参数与签名规则、支持范围见[易支付协议兼容接入](./docs/13-epay-compat-integration.md)。**资金路径和免签那类做法完全不同**（见上一条），这条接入面只是把**协议**对上，钱一样走持牌支付公司、进你自己的结算账户。
 
 **手续费多少？**
-**平台服务费 2.25%（商家实收 97.75%），全平台统一一档，手续费 0.01 元起。**每一单响应里的 `feeProjection` 就是那一单的准确口径（带 `ruleVersion`，拿它对账）；如果你有单独约定过的费率，以商家后台「费率说明」页按账户实时展示为准。限额按主体类型判定（对公主体不设平台业务金额上限，实际以支付服务方额度为准；个人主体按平台默认档），也没有自助查询面（越界被拒时走官网反馈渠道，附 `requestId`）。详见[费率与限额](./docs/07-fees-and-limits.md)。
+**平台服务费 2.80%**（商家实收 97.20%；存量商户按其冻结费率；单一档、不分渠道），手续费 0.01 元起。**每一单响应里的 `feeProjection` 就是那一单的准确口径（带 `ruleVersion`，拿它对账）；如果你有单独约定过的费率，以商家后台「费率说明」页按账户实时展示为准。限额按主体类型判定（对公主体不设平台业务金额上限，实际以支付服务方额度为准；个人主体按平台默认档），也没有自助查询面（越界被拒时走官网反馈渠道，附 `requestId`）。详见[费率与限额](./docs/07-fees-and-limits.md)。
 
 **要交搭建费 / 入驻费 / 通道费吗？**
-都不用。**入驻、开通、接入对接全程免费**：不收搭建费、不收入驻费、不收开通费，也不另收通道费。我们会收的费用只有上面写明的那一档（按笔计），没有一次性收费、没有隐藏项目。市面上有些平台会先收一笔搭建费或通道费、再叠加抽成；在我们这里，这份资料里写的费用就是全部。
+入驻与接入不用钱：不收搭建费、不收入驻费、不另收通道费。**B 方案 0 开户费**（按规则缴保证金，旧渠道微信门槛 ¥168，旧渠道支付宝暂未开放）；**A 方案（新渠道直收）** 收一次性服务开通费 **¥475（支付宝）/ ¥1,520（微信）**（原价 ¥500/¥1,600），其适用范围以商户门户开通页说明为准。按笔计的服务费只有上面写明的那一档，没有隐藏项目。
 
 **有沙箱或测试环境吗？**
-暂时没有沙箱、测试应用和回调模拟器。替代办法：本地演示（零依赖，全链路假数据）+ [上线检查清单](./docs/11-go-live-checklist.md) + 第一笔线上小额单我们陪你盯（**不承诺 SLA**）。**本地跑通只能证明签名和解析没错，证明不了资金链通。**
+沙箱应用需平台审批开通（独立 appId/密钥，本地模拟支付与回调，不产生真实资金）。未开通时的替代办法：本地演示（零依赖，全链路假数据）+ [上线检查清单](./docs/11-go-live-checklist.md) + 第一笔线上小额单我们陪你盯（**不承诺 SLA**）。**沙箱或本地跑通只能证明签名和解析没错，证明不了资金链通。**
 
 **要自己写代码吗？用什么语言？**
 接入是**服务器对服务器**的：下单 / 查单 / 退款 + 通知验签。仓库给了 Node.js、Java、PHP、Python 四份签名示例，**拼出来的串完全一样**，还带对照值；通知验签另有 Node 的参考实现。
@@ -241,9 +243,9 @@ Xiaodou Open Platform (小豆支付开放平台) is a server-to-server payment A
 
 - Eligibility: mainland China only. Individuals can apply with a Chinese resident ID card and a bank card issued in mainland China; no business license is required. Onboarding is manually reviewed and is not instant. Overseas entities cannot open an account directly.
 - Payment methods: Alipay and WeChat Pay. Inside Alipay you may choose Huabei or a credit card; inside WeChat Pay you may use a credit card, subject to what the cashier displays. These are payment tools inside the cashier, not separate channels.
-- Fees: A 2.25% platform fee applies only to successful online payments; merchants keep 97.75%; fees start at CNY 0.01. Onboarding, activation and integration support are free.
+- Fees: The platform fee applies only to successful online payments: the platform fee is 2.80% (one single tier, not per channel; merchants keep 97.20%; existing merchants keep their frozen rates); fees start at CNY 0.01. Onboarding, activation and integration support are free.
 - Payout: funds are split when the payment succeeds and automatically settled to the bank card bound to your account before noon the next day, including holidays. There is no manual withdrawal button.
-- Boundaries: the platform only collects money and reports payment status; delivery, provisioning and shipping remain in your own system. No sandbox, test application or callback simulator is provided. WeChat JSAPI works only inside the WeChat browser.
+- Boundaries: the platform only collects money and reports payment status; delivery, provisioning and shipping remain in your own system. A sandbox application is available on platform approval (simulated payments/refunds/webhooks, no real funds; it does not validate production permissions, pricing or channel capability). WeChat JSAPI works only inside the WeChat browser.
 - English pages: <https://xdfair.cn/en/> · <https://xdfair.cn/en/individual/> · <https://xdfair.cn/en/compatibility/epay/>
 
 Use with Claude Code / Codex / Cursor / Copilot: point the assistant at [`skill/SKILL.md`](./skill/SKILL.md) and [`examples/`](./examples/); the skill is content, not an SDK.
@@ -268,7 +270,7 @@ assets/            公开仓页面用的图片（如官方 QQ 群二维码）
 - **字段名**：能机器读的地方一律用我们的字段名（形如 `qrCode`），不出现上游系统的原始字段名。
 - **发货**：我们只负责收钱和支付状态；**卡密、发货这些交付动作由你自己的系统承担**——收银页上不放货。
 - **什么才算付款成功**：收银页打开了、跳回来了、买家点了「完成」，**都不算**；只有查单的结果、或者验过签的通知才算。
-- **费率**：全平台统一一档，写在上面了（入账对账口径以每单 `feeProjection` 为准）。**限额、到账时效、通道放行**会变：这份资料不写死它们的具体数字，只告诉你「按什么判定、去哪儿看当前值」——限额按**本单实际到账账号的主体类型**分档（对公主体不设平台业务金额上限，实际以支付服务方额度为准；个人主体按平台默认档）。
+- **费率**：单一档，写在上面了（入账对账口径以每单 `feeProjection` 为准；存量商户按其冻结费率）。**限额、到账时效、通道放行**会变：这份资料不写死它们的具体数字，只告诉你「按什么判定、去哪儿看当前值」——限额按**本单实际到账账号的主体类型**分档（对公主体不设平台业务金额上限，实际以支付服务方额度为准；个人主体按平台默认档）。
 
 ## 许可证
 
@@ -289,6 +291,6 @@ assets/            公开仓页面用的图片（如官方 QQ 群二维码）
 
 ## 支持边界
 
-**暂时没有沙箱 / 测试应用 / 回调模拟器。**替代办法 = 本地演示（本目录）+ 上线检查清单 + 第一笔线上单人工陪你盯（不承诺 SLA）。
+**沙箱应用需平台审批开通**（本地模拟支付/退款/回调，不产生真实资金，不验证生产能力）。替代办法 = 本地演示（本目录）+ 上线检查清单 + 第一笔线上单人工陪你盯（不承诺 SLA）。
 
 本目录由运营主体**宇智人工智能（深圳）有限公司**维护；**收付与结算由有支付牌照的支付机构提供**——**央行持牌机构清算，安全可靠的个人和企业支付接口**。接入和上线以平台在线合同、后台显示的实际配置、以及接口的真实行为为准。
