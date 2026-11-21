@@ -26,7 +26,7 @@
 
 **已兼容 Sub2API 与 New API**：[Sub2API](https://github.com/Wei-Shaw/sub2api)（主动查单走 `POST api.php`）与 [New API](https://github.com/QuantumNous/new-api)（建单走 `POST submit.php` 表单）的用户，把同样的网关地址 / 商家 ID / 商户密钥填进它们内置的易支付配置即可，不用改代码；两者的通知与回跳都按同一套 V1 签名规则验签。
 
-费用口径：平台服务费 1.5%～2.8%（商家实收 98.5%～97.2%；存量商户按其冻结费率），手续费 0.01 元起；每一单的准确金额仍以响应里的 `feeProjection` 为准（存量商户按其冻结费率，单独约定以商家后台「费率说明」页为准）。 服务费**默认从商家结算款内扣（卖家承担）**；买家承担为灰度能力（2026-10-20 起已开通，仍受单笔上限与平台闸门约束），以订单接口返回为准。**入驻与接入免费**：不收搭建费、入驻费、通道费；**B 方案 0 开户费**、保证金 **50 起**（支付宝 ¥50、微信 ¥168；开通后 48 小时内 0 保证金即可售卖）；**A 方案（新渠道直收）** 收取一次性服务开通费 **¥475（支付宝）/ ¥1,520（微信）**（原价 ¥500 / ¥1,600），其费率与适用范围以商户门户开通页签署页回显为准。
+费用口径：平台服务费 1.5%～2.8%（商家实收 98.5%～97.2%；存量商户按其冻结费率），手续费 0.01 元起；每一单的准确金额仍以响应里的 `feeProjection` 为准（存量商户按其冻结费率，单独约定以商家后台「费率说明」页为准）。 服务费**默认从商家结算款内扣（卖家承担）**；买家承担为灰度能力（2026-10-20 起已开通，仍受单笔上限与平台闸门约束），以订单接口返回为准。**入驻与接入免费**：不收搭建费、入驻费、通道费；**B 方案 0 开户费**、保证金 **50 起**（支付宝 ¥50、微信 ¥168；开通后 48 小时内 0 保证金即可售卖）；**A 方案（新渠道直收）** 收取一次性服务开通费 **¥475（支付宝）/ ¥950（微信）**（原价 ¥500 / ¥1,000），其费率与适用范围以商户门户开通页签署页回显为准。
 
 这个仓库就是它的**全部接入资料**：15 篇文档、四种语言的签名示例、一个能跑起来的本地演示，还有一份可以直接丢给 AI 编码助手（Claude Code、Codex 之类）的 Skill。**跟你在商家后台看到的是同一份内容。**
 
@@ -131,7 +131,7 @@
 | **个人网站接入** / **个人网站收款** / 个人用户接入支付宝微信 | 网站只在**服务器端**调用七个接口；页面、商品、发货都留在你自己的网站。个人主体进件后接口与其他主体一致（见下方「个人网站如何接入支付宝 / 微信支付」） |
 | **个人接入支付 API** / **支付接口 API** | 就是[接口一览](#接口一览)里的七个接口：下单、重拉、查单、关单、退款、查退款、查到账账号；请求签名 `XD-Signature-v1`，四语言示例在 `examples/` |
 | **收款通道** / 收款接口 / 支付通道 | 就是本仓这七个接口：一条**服务器对服务器**的收款通道，钱由持牌支付公司收付结算（见[接口一览](#接口一览)） |
-| **免费接入** / 免搭建费 / 不收入驻费 | **入驻与接入免费**——不收搭建费、入驻费、通道费；B 方案 0 开户费、按规则缴保证金；A 方案一次性服务开通费 ¥475/¥1,520（见[资金与结算](#资金与结算)） |
+| **免费接入** / 免搭建费 / 不收入驻费 | **入驻与接入免费**——不收搭建费、入驻费、通道费；B 方案 0 开户费、按规则缴保证金；A 方案一次性服务开通费 ¥475/¥950（见[资金与结算](#资金与结算)） |
 | **H5 支付** / H5 远程支付 | 我们的收银页（`payUrl`）：电脑扫码、手机浏览器、微信里打开，三种情况行为不一样（见[终端能力矩阵](./docs/06-cashier-integration.md)） |
 | **收款码** | 下单响应里的**官方收款码** `qrCode`（只有支付宝渠道给，而且只有**下单那一次响应**里有），可以直接画在你自己的电脑网页上 |
 | **微信收款 / 支付宝收款** | 两条通道的能力面都做好了；**支付宝现在就能接**，**微信 JSAPI 已开放**——买家在微信内打开收银页即可调起微信支付（仅限微信内浏览器；微信外手机浏览器与商家 App 内没有「直接拉起」形态；桌面微信内置浏览器同样按微信内链路处理，若无法完成支付请改用手机微信打开同一链接）。其他通道或交易形态的放行仍以对接人确认为准（放行由平台整体控制、不区分应用，后台没有查询面；未放行时下单返回一个可预期的拒绝，见 [FAQ](#常见问题faq)） |
@@ -153,7 +153,7 @@
 - **钱先进哪个账户、按什么规则分，由你的「收款分配」说了算**：可以绑定多个到账账号，单账号全额、按顺序轮流或比例分账（2–4 个参与账号，配置面每项 `0 < shareBps < 10000`、合计 10000bps）；**一单一结、随单冻结**，退款按原订单冻结的分配快照发起回退（实际到账路径以支付服务方原交易与分账合同为准）。查当前分配用 `GET /api/open/v1/settlement/accounts`，详见[到账账号与收款分配](./docs/14-settlement-accounts.md)。
 - **收付和结算都是有支付牌照的支付公司做的**，按设置**自动转到你绑定的银行卡** —— **不用你手动提现**。现在是**次日中午前到账**（含节假日）。
 - **费率公开**：平台服务费 1.5%～2.8%（商家实收 98.5%～97.2%；存量商户按其冻结费率），手续费 0.01 元起。每一单响应里的 `feeProjection`（带 `ruleVersion`）就是那一单的准确口径，入账用它；如果你有单独约定过的费率，以商家后台「费率说明」页按账户实时展示为准。**限额按主体类型判定**：对公（个体工商户/企业）主体不设平台业务金额上限，实际以支付服务方额度为准；个人主体按平台默认档。具体数字不在文档里写死（没有自助查询面，越界被拒时走官网反馈渠道）。
-- **一次性收费只有 A 方案开通费**：入驻与接入免费（不收搭建费、入驻费、通道费）；B 方案 0 开户费、按规则缴保证金；A 方案一次性服务开通费 ¥475/¥1,520（原价 ¥500/¥1,600）。按笔计的服务费只有上一条那一档，没有隐藏项目。
+- **一次性收费只有 A 方案开通费**：入驻与接入免费（不收搭建费、入驻费、通道费）；B 方案 0 开户费、按规则缴保证金；A 方案一次性服务开通费 ¥475/¥950（原价 ¥500/¥1,000）。按笔计的服务费只有上一条那一档，没有隐藏项目。
 - 结算周期、到账时间**都会变**：**一律看后台当时显示的**；微信 JSAPI 已开放（仅微信内打开收银页），其他通道或交易形态是否放行以对接人确认为准（后台无查询面）。别抄进你的对外文案或代码常量里。
 
 ## 五分钟上手
@@ -217,7 +217,7 @@ node demo/h5-cashier/smoke.js         # 冒烟自检（含负向用例），打�
 **平台服务费 1.5%～2.8%**（商家实收 98.5%～97.2%；存量商户按其冻结费率），手续费 0.01 元起。**每一单响应里的 `feeProjection` 就是那一单的准确口径（带 `ruleVersion`，拿它对账）；如果你有单独约定过的费率，以商家后台「费率说明」页按账户实时展示为准。限额按主体类型判定（对公主体不设平台业务金额上限，实际以支付服务方额度为准；个人主体按平台默认档），也没有自助查询面（越界被拒时走官网反馈渠道，附 `requestId`）。详见[费率与限额](./docs/07-fees-and-limits.md)。
 
 **要交搭建费 / 入驻费 / 通道费吗？**
-入驻与接入不用钱：不收搭建费、不收入驻费、不另收通道费。**B 方案 0 开户费**（保证金 **50 起**：支付宝 ¥50、微信 ¥168；开通后 48 小时内 0 保证金即可售卖）；**A 方案（新渠道直收）** 收一次性服务开通费 **¥475（支付宝）/ ¥1,520（微信）**（原价 ¥500/¥1,600），其适用范围以商户门户开通页说明为准。按笔计的服务费只有上面写明的那一档，没有隐藏项目。
+入驻与接入不用钱：不收搭建费、不收入驻费、不另收通道费。**B 方案 0 开户费**（保证金 **50 起**：支付宝 ¥50、微信 ¥168；开通后 48 小时内 0 保证金即可售卖）；**A 方案（新渠道直收）** 收一次性服务开通费 **¥475（支付宝）/ ¥950（微信）**（原价 ¥500/¥1,000），其适用范围以商户门户开通页说明为准。按笔计的服务费只有上面写明的那一档，没有隐藏项目。
 
 **有沙箱或测试环境吗？**
 沙箱应用需平台审批开通（独立 appId/密钥，本地模拟支付与回调，不产生真实资金）。未开通时的替代办法：本地演示（零依赖，全链路假数据）+ [上线检查清单](./docs/11-go-live-checklist.md) + 第一笔线上小额单我们陪你盯（**不承诺 SLA**）。**沙箱或本地跑通只能证明签名和解析没错，证明不了资金链通。**
@@ -243,7 +243,7 @@ Xiaodou Open Platform (小豆支付开放平台) is a server-to-server payment A
 
 - Eligibility: mainland China only. Individuals can apply with a Chinese resident ID card and a bank card issued in mainland China; no business license is required. Onboarding is manually reviewed and is not instant. Overseas entities cannot open an account directly.
 - Payment methods: Alipay and WeChat Pay. Inside Alipay you may choose Huabei or a credit card; inside WeChat Pay you may use a credit card, subject to what the cashier displays. These are payment tools inside the cashier, not separate channels.
-- Fees: The platform fee applies only to successful online payments: the platform fee is 1.5%–2.8% (Plan A 1.5% / Plan B 2.8%; merchants keep 98.5%–97.2%; existing merchants keep their frozen rates); fees start at CNY 0.01. Onboarding, activation and integration support are free.
+- Fees: The platform fee applies only to successful online payments: the platform fee is 1.5%–2.8% (Plan A 1.5% / Plan B 2.8%; merchants keep 98.5%–97.2%; existing merchants keep their frozen rates); fees start at CNY 0.01. Onboarding and integration support are free. Plan B has no setup fee; Plan A charges a one-time service activation fee of CNY 475 (Alipay) / CNY 950 (WeChat), list price CNY 500 / CNY 1,000.
 - Payout: funds are split when the payment succeeds and automatically settled to the bank card bound to your account before noon the next day, including holidays. There is no manual withdrawal button.
 - Boundaries: the platform only collects money and reports payment status; delivery, provisioning and shipping remain in your own system. A sandbox application is available on platform approval (simulated payments/refunds/webhooks, no real funds; it does not validate production permissions, pricing or channel capability). WeChat JSAPI works only inside the WeChat browser.
 - English pages: <https://xdfair.cn/en/> · <https://xdfair.cn/en/individual/> · <https://xdfair.cn/en/compatibility/epay/>
