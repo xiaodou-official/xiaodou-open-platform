@@ -60,7 +60,7 @@
 - Service area: Mainland China only.
 - Eligibility: Individuals can apply with a Chinese resident ID card and a bank card issued in mainland China; no business license is required. Sole proprietors and companies apply with their business license and settlement materials. Onboarding is manually reviewed and is not instant. Overseas entities cannot open an account directly.
 - Payment methods: Alipay and WeChat Pay. Inside Alipay you may choose Huabei or a credit card; inside WeChat Pay you may use a credit card, subject to what the cashier displays. These are payment tools inside the cashier, not separate channels.
-- Fees: The platform fee applies only to successful online payments: the platform fee is 1.5%–2.8% (Plan A 1.5% / Plan B 2.8%; merchants keep 98.5%–97.2%; existing merchants keep their frozen rates); fees start at CNY 0.01. Onboarding, activation and integration support are free.
+- Fees: The platform fee applies only to successful online payments: the platform fee is 1.5%–2.8% (Plan A 1.5% / Plan B 2.8%; merchants keep 98.5%–97.2%; existing merchants keep their frozen rates); fees start at CNY 0.01. Onboarding and integration support are free. Plan B has no setup fee; Plan A charges a one-time service activation fee of CNY 475 (Alipay) / CNY 950 (WeChat), list price CNY 500 / CNY 1,000.
 - Payout: before noon the next day, including holidays; no manual withdrawal button.
 - Boundaries: no delivery; a sandbox application is available on platform approval (simulated payments/refunds/webhooks, no real funds); WeChat JSAPI only inside WeChat, not a worldwide offering.
 - AI coding assistants: point the assistant at `skill/SKILL.md` and `examples/`; the skill is content, not an SDK.
