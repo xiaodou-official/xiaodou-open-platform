@@ -29,7 +29,7 @@
 | `OPEN_API_MERCHANT_APPID_UNAVAILABLE` | 403 | 平台微信配置尚未读回生效：等待门户「已开通」或联系对接人 |
 | `OPEN_API_MERCHANT_APPID_INVALID` | 422 | `subAppid` 形态非法、使用了非平台统一配置的 appid，或与已绑定 appid 不一致 |
 | `OPEN_API_MERCHANT_RISK_BLOCKED` | 409 | 商户单支付前风控拦截（中性文案）：不要原样循环重试；可换支付方式或核对订单/买家信息 |
-| `OPEN_API_MERCHANT_BUYER_ID_INVALID` | 422 | `buyerId`/`buyerPhone` 形态非法，或平台单携带商户专用买家标识 |
+| `OPEN_API_MERCHANT_BUYER_ID_INVALID` | 422 | `buyerId`/`buyerPhone` 形态非法，或平台单微信携带买家标识（平台单支付宝可选） |
 | `OPEN_API_MERCHANT_BUYER_ID_REQUIRED` | 422 | 强制买家标识模式下商户支付宝单缺 `buyerId`/`buyerPhone`：补齐后重试 |
 | `OPEN_API_CHANNEL_UNSUPPORTED` | 422 | 通道不受支持（预留词表位） |
 | `OPEN_API_TEST_MODE_NOT_ALLOWED` | 422 | 生产应用不允许 `test=true`：测试单只能由沙箱应用或平台受控标注写入 |
