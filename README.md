@@ -31,6 +31,7 @@
 这个仓库就是它的**全部接入资料**：15 篇文档、四种语言的签名示例、一个能跑起来的本地演示，还有一份可以直接丢给 AI 编码助手（Claude Code、Codex 之类）的 Skill。**跟你在商家后台看到的是同一份内容。**
 
 > 版本看 [`MANIFEST.json`](./MANIFEST.json)（`skillVersion`、API 版本、签名版本、`contentHash` 都在里面）。
+> 更新记录看 [`releases/release-notes.json`](./releases/release-notes.json) 或官网 <https://xdfair.cn/releases/>：按时间倒序，每条标明是否需要重新对接、影响哪些文档与 Skill。
 > 这里是**接入资料，不是官方 SDK**——我们不发包，示例代码是给你直接抄的参考实现。
 > 这里是这份资料的**唯一出处**：商家后台里的那版和公开发布的这版，都由这里产出。
 

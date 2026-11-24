@@ -1,0 +1,532 @@
+{
+  "schema": "xd-open-platform-release-notes/v1",
+  "updatedAt": "2026-11-24",
+  "entries": [
+    {
+      "version": "2.9.3",
+      "date": "2026-11-24",
+      "type": "DOC",
+      "title": "新增结构化更新记录与每篇文档更新时间轴",
+      "summary": "官网新增 /releases/ 更新记录页；每篇文档新增「本篇更新记录」；Skill 页新增「Skill 更新记录」；卖家后台开发者文档页新增「更新记录」Tab。",
+      "integration": "NONE",
+      "action": "无需重新对接。后续发版请按 releases/release-notes.json 与 docs/10-changelog.md 同批更新。",
+      "docIds": [
+        "XD-OP-10"
+      ],
+      "skill": false
+    },
+    {
+      "version": "2.9.2",
+      "date": "2026-11-22",
+      "type": "FEATURE",
+      "title": "平台单支付宝支付前风控，可选买家标识 buyerId/buyerPhone",
+      "summary": "平台单支付宝（ALIPAY_H5 / A_NATIVE）在创建订单与重拉起时新增支付前风控：卖家硬门、单笔上限 ¥10,000、卖家频次/金额窗/同金额聚集、账单级 override。风险未通过时返回 422 OPEN_API_LIMIT_EXCEEDED 或 409 OPEN_API_MERCHANT_RISK_BLOCKED，不产生订单/支付尝试行。",
+      "integration": "OPTIONAL",
+      "action": "已接入方无需迁移；建议按第 3 篇 API 参考尽量传入 buyerId/buyerPhone，以启用买家频次、跨卖家、同金额重复与店铺级/平台级黑名单判定。平台单微信仍禁止携带这两个字段。",
+      "docIds": [
+        "XD-OP-03",
+        "XD-OP-04"
+      ],
+      "skill": true
+    },
+    {
+      "version": "2.9.1",
+      "date": "2026-11-21",
+      "type": "CHANGE",
+      "title": "新渠道微信 A 方案一次性服务开通费目录价调整为 ¥1,000",
+      "summary": "新渠道微信 A 方案一次性服务开通费目录价由 ¥1,600 调整为 ¥1,000，9.5 折活动价继续、不设截止，实付 ¥950；新渠道支付宝价格不变（目录价 ¥500、活动价 ¥475）。",
+      "integration": "NONE",
+      "action": "只改价格事实，不改接入协议、接口与 A 方案费率；已支付订单按支付当时价格履约，不补差、不追溯。",
+      "docIds": [
+        "XD-OP-07"
+      ],
+      "skill": false
+    },
+    {
+      "version": "2.9.0",
+      "date": "2026-11-20",
+      "type": "FIX",
+      "title": "关单「处理中（P）」不再当作已关闭",
+      "summary": "支付机构关单回 P（处理中）时，关单端点返回 closeState=CLOSE_PENDING，订单保持 CREATED/PAYING，不产生 PAYMENT_CLOSED；只有关单查询确认关闭（S）后才返回 CLOSE_REQUESTED、订单 CLOSED 并推 PAYMENT_CLOSED。",
+      "integration": "RECOMMENDED",
+      "action": "已接入方对未知 closeState 应按「不释放库存」保守处理。收到 CLOSE_PENDING 时用新的 X-XD-Request-Id 重试关单端点；关单处理中不得重拉起。",
+      "docIds": [
+        "XD-OP-03",
+        "XD-OP-04"
+      ],
+      "skill": true
+    },
+    {
+      "version": "2.8.0",
+      "date": "2026-11-16",
+      "type": "FEATURE",
+      "title": "按单支付有效期 timeExpireSeconds",
+      "summary": "创建订单新增可选字段 timeExpireSeconds（整数秒，300–86400）：首次建单冻结，显式值优先于平台配置与渠道缺省；不传时行为与之前完全一致。",
+      "integration": "NONE",
+      "action": "无需迁移。同 outTradeNo 重放时，显式传不同值会返回 409 OPEN_API_IDEMPOTENCY_CONFLICT；需要不同窗口请使用新的 outTradeNo。该字段不等于主动关单能力，恢复库存仍以 expireAt 与事件通知为准。",
+      "docIds": [
+        "XD-OP-03"
+      ],
+      "skill": true
+    },
+    {
+      "version": "2.7.0",
+      "date": "2026-11-11",
+      "type": "CHANGE",
+      "title": "对外费率公开口径改为支付宝/微信分别展示",
+      "summary": "公开面费率由「全平台统一一档」更新为支付宝与微信分别展示各自费率；存量商户按其已冻结的渠道费率执行。",
+      "integration": "NONE",
+      "action": "本次只同步对外资料口径，无接口路径、请求/响应字段、签名规范或资金行为变更；商家无需迁移。每单准确金额仍以 feeProjection（带 ruleVersion）为准。",
+      "docIds": [
+        "XD-OP-07"
+      ],
+      "skill": false
+    },
+    {
+      "version": "2.6.0",
+      "date": "2026-11-10",
+      "type": "FEATURE",
+      "title": "沙箱应用执行面与本地模拟链",
+      "summary": "平台可向已进件且状态为 ACTIVE 的商户签发沙箱应用；新增模拟支付端点 POST /api/open/v1/payments/{outTradeNo}/sandbox，支持 PAY_SUCCESS / PAY_FAILED，不调用支付机构、不产生真实资金。",
+      "integration": "NONE",
+      "action": "无需迁移。沙箱需平台审批开通，单商户最多 1 个；沙箱订单不能转正式交易、不参与结算与对账。正式应用调用模拟端点返回 422 OPEN_API_SANDBOX_APP_REQUIRED。",
+      "docIds": [
+        "XD-OP-03",
+        "XD-OP-04",
+        "XD-OP-11"
+      ],
+      "skill": true
+    },
+    {
+      "version": "2.5.0",
+      "date": "2026-11-09",
+      "type": "CHANGE",
+      "title": "补齐商户经营状态错误码、退款工单入口与 Skill 买家标识字段",
+      "summary": "公开错误码新增 OPEN_API_MERCHANT_DEPOSIT_BLOCKED（保证金宽限期已过未补齐）与 OPEN_API_MERCHANT_COMPLAINT_HOLD（未结案投诉经营限制），均只拦新增下单/重拉起；退款在缺少收款分配快照或易支付协议面时改走门户退款工单；Skill 补齐 buyerId/buyerPhone 说明。",
+      "integration": "NONE",
+      "action": "无接口路径、字段、签名或资金行为变更。已接入方建议识别两枚新错误码并停止重试；存量查询、关单、退款与结算读回不受影响。",
+      "docIds": [
+        "XD-OP-03",
+        "XD-OP-04",
+        "XD-OP-08",
+        "XD-OP-11",
+        "XD-OP-15"
+      ],
+      "skill": true
+    },
+    {
+      "version": "2.4.0",
+      "date": "2026-11-09",
+      "type": "CHANGE",
+      "title": "新商户微信渠道首次开通改为「7 天成交 AND 保证金净额 ≥¥168」",
+      "summary": "微信渠道首次开通（未开成 NOT_OPEN/FAILED）必须同时满足：最近 7 个自然日每天至少 1 笔成功交易，且保证金净额 ≥¥168；只缴 ¥168 不能免 7 天。微信渠道开通与实名只在北京时间 08:00–18:00 开放。",
+      "integration": "NONE",
+      "action": "已开微信渠道的商户不受影响；新商户按新门槛准备，接口无变化。",
+      "docIds": [
+        "XD-OP-11",
+        "XD-OP-15"
+      ],
+      "skill": true
+    },
+    {
+      "version": "2.3.0",
+      "date": "2026-11-07",
+      "type": "CHANGE",
+      "title": "微信快速通道门槛改为「保证金净额 ≥ ¥168」，并支持主动补缴",
+      "summary": "微信开通的快速通道门槛由「保证金净额 ＞ ¥688」改为「净额 ≥ ¥168」（167.99 不通过，168.00 通过）；保证金支持主动缴纳、提前缴纳、多次缴纳，超缴保留余额。易支付协议面的失败提示同步区分原因。",
+      "integration": "NONE",
+      "action": "无需改代码。补缴只让商户具备开通资格，不会自动开通；仍需在门户点一次「立即开通」。",
+      "docIds": [
+        "XD-OP-13",
+        "XD-OP-15"
+      ],
+      "skill": true
+    },
+    {
+      "version": "2.2.0",
+      "date": "2026-11-07",
+      "type": "CHANGE",
+      "title": "微信开通改为「门户手动申请、服务端自动审批」",
+      "summary": "支付宝认证通过后自动开通；微信认证通过后仍需商户在门户「收款信息 → 收款开通」点「立即开通」，服务端现场判定保证金与 7 天成交门槛，达标立即自动审批通过并完成平台配置。",
+      "integration": "NONE",
+      "action": "无需改代码。未达标时门户显示缺什么（保证金 / 7 天进度），完成后再点「立即开通」即可。",
+      "docIds": [
+        "XD-OP-11",
+        "XD-OP-15"
+      ],
+      "skill": true
+    },
+    {
+      "version": "2.1.0",
+      "date": "2026-11-07",
+      "type": "FEATURE",
+      "title": "商户微信单新增「平台桥接页」",
+      "summary": "建单/重拉起不传 subOpenid 时进入平台桥接：下单只落库、零当次外呼，下发 payUrl；买家在微信内打开后由平台完成服务号 OAuth 与 JSAPI 拉起。传 subOpenid 的自管形态逐字不变。",
+      "integration": "NONE",
+      "action": "纯新增、向后兼容。subOpenid 由「商户微信单必填」改为可选；商户自有 appid 的订单仍必须走自管形态。",
+      "docIds": [
+        "XD-OP-03",
+        "XD-OP-04",
+        "XD-OP-15"
+      ],
+      "skill": true
+    },
+    {
+      "version": "2.0.0",
+      "date": "2026-11-06",
+      "type": "CHANGE",
+      "title": "微信支付改为平台统一配置",
+      "summary": "公众号 appid 与支付授权目录由平台统一配置并读回，商户不再绑定自己的公众号 appid；建单传买家在平台公众号下的 subOpenid，subAppid 如传必须等于平台公众号 appid。",
+      "integration": "REQUIRED",
+      "action": "使用商户自有公众号 appid 自助绑定的商家需要迁移到平台统一配置；请求中携带商户自有 appid 会被拒绝。未使用该形态的商家无需改动。",
+      "docIds": [
+        "XD-OP-03",
+        "XD-OP-15"
+      ],
+      "skill": true
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-11-03",
+      "type": "FEATURE",
+      "title": "微信 JSAPI 公众号配置指引（第 15 篇）",
+      "summary": "新增第 15 篇与 Skill 参考，讲清公众号认证、网页授权域名、JSAPI 支付授权目录、appid 绑定与读回、subOpenid 取用与页面拉起。",
+      "integration": "NONE",
+      "action": "无需迁移。新渠道商户按第 15 篇完成微信侧配置；平台只登记与读回，不代做微信侧配置。",
+      "docIds": [
+        "XD-OP-15"
+      ],
+      "skill": true
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-11-02",
+      "type": "FEATURE",
+      "title": "新渠道商户微信单直连",
+      "summary": "新渠道商户单（collectionMode=MERCHANT）支持支付宝与微信按商户已开通能力分别使用；原生接口新增可选 subOpenid/subAppid，下发响应新增可选 jsapiParams；易支付兼容面新增 sub_openid 与 jsapi_params。",
+      "integration": "OPTIONAL",
+      "action": "旧渠道（平台收银页）行为逐字不变；只有新渠道商户的微信单需要补 subOpenid。",
+      "docIds": [
+        "XD-OP-03",
+        "XD-OP-04",
+        "XD-OP-13"
+      ],
+      "skill": true
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-10-28",
+      "type": "CORRECTION",
+      "title": "易支付兼容面的退款指引更正",
+      "summary": "原文写「退款走商家后台成交订单」，但「成交订单」只列平台商城商品订单，API 订单不在其中。现更正为：兼容面不提供退款接口，需退款请把商户单号、支付时间、金额与原因发给对接人或官网反馈渠道。",
+      "integration": "NONE",
+      "action": "无需迁移。退款结果在商家后台「开放平台 → 交易流水」的「退款」列查看。",
+      "docIds": [
+        "XD-OP-13"
+      ],
+      "skill": false
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-10-22",
+      "type": "CHANGE",
+      "title": "易支付兼容面通知回执大小写不敏感",
+      "summary": "submit.php / mapi.php / api.php 的异步通知成功判据由「响应体字节正好是小写 success」放宽为大小写不敏感（success / SUCCESS 均视为送达）。原生 XD-Webhook-v1 不变，仍要求字节正好是 success。",
+      "integration": "NONE",
+      "action": "无需迁移；商家原有返回小写 success 的行为继续有效。",
+      "docIds": [
+        "XD-OP-05",
+        "XD-OP-13"
+      ],
+      "skill": true
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-10-22",
+      "type": "FIX",
+      "title": "未派发订单关单不再误报 503",
+      "summary": "对未派发订单（买家从未唤起的微信 JSAPI 等）改为零外呼本地关闭，返回 200 + closeState=CLOSE_REQUESTED；不再把支付机构「交易不存在」折成 503 OPEN_API_GUARD_UNAVAILABLE。",
+      "integration": "NONE",
+      "action": "无需迁移；此前遇到 503 的未派发单可直接重试关单或等待到期自动关闭。已派发订单的关单语义不变。",
+      "docIds": [
+        "XD-OP-03",
+        "XD-OP-04"
+      ],
+      "skill": false
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-10-22",
+      "type": "DOC",
+      "title": "易支付兼容面补充 Sub2API / New API",
+      "summary": "公开面新增两个已核对客户端：Sub2API（主动查单走 POST api.php）与 New API（建单走 POST submit.php）。两者都只需填网关地址、商家 ID、商户密钥，不改代码。",
+      "integration": "NONE",
+      "action": "无需迁移；使用 Sub2API / New API 的商家按第 13 篇配置即可。",
+      "docIds": [
+        "XD-OP-13"
+      ],
+      "skill": true
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-10-19",
+      "type": "FEATURE",
+      "title": "服务费承担方 add-only（灰度）",
+      "summary": "创建订单新增可选 feeBearer（SELLER|BUYER，缺省 SELLER）与 merchantAmountFen（仅 BUYER）；BUYER 模式下 amountFen 由服务端反算。订单快照、查单/重拉起响应与事件体新增顶层 feeBearer / merchantAmountFen / feeAmountFen。",
+      "integration": "NONE",
+      "action": "无需迁移；宽松解析未知字段即可。BUYER 为灰度能力，2026-10-20 起已开通，闸门关闭时新 BUYER 单返回 422 OPEN_API_FEE_BEARER_DISABLED。",
+      "docIds": [
+        "XD-OP-03",
+        "XD-OP-04",
+        "XD-OP-05"
+      ],
+      "skill": true
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-10-17",
+      "type": "DOC",
+      "title": "官网文档中心入口",
+      "summary": "公开面新增官网文档中心入口：全部文档逐篇成页，并提供文档包与 Skill 包的在线下载。官网与公开仓同源（同一 contentHash）。",
+      "integration": "NONE",
+      "action": "无需迁移。",
+      "docIds": [],
+      "skill": false
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-10-17",
+      "type": "CHANGE",
+      "title": "微信 JSAPI 与比例分账口径开放",
+      "summary": "微信 JSAPI 在微信内开放；比例分账支持 SINGLE / ROUND_ROBIN / RATIO，RATIO 为 2–4 个参与账号、配置面每项 0 < shareBps < 10000、合计恒为 10000bps。",
+      "integration": "NONE",
+      "action": "无需迁移；本轮只改资料表述，不改接口行为。",
+      "docIds": [
+        "XD-OP-03",
+        "XD-OP-06",
+        "XD-OP-14"
+      ],
+      "skill": true
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-10-14",
+      "type": "CHANGE",
+      "title": "收款金额限额按主体类型判定",
+      "summary": "平台默认限额档从「全类型一档」改为按本单实际到账账号的主体类型判定：对公主体（个体工商户 / 企业）不设平台业务金额上限；个人主体维持平台默认档。",
+      "integration": "NONE",
+      "action": "无需迁移。请求/响应字段、错误码与判定顺序都不变；原本就应同时处理 400 OPEN_API_BODY_INVALID 与 422 OPEN_API_LIMIT_EXCEEDED。不要用试探下单摸限额边界。",
+      "docIds": [
+        "XD-OP-03",
+        "XD-OP-07"
+      ],
+      "skill": true
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-10-14",
+      "type": "FEATURE",
+      "title": "新增到账账号与收款分配只读查询端点（第 14 篇）",
+      "summary": "新增 GET /api/open/v1/settlement/accounts，返回到账账号列表与当前收款分配（收款方式、参与账号与顺序）。端点只读，写面在商家后台「店铺设置 → 到账账号」。",
+      "integration": "NONE",
+      "action": "无需迁移。新增端点不触碰既有端点、字段与错误码；分配规则改动只影响之后新建的订单。",
+      "docIds": [
+        "XD-OP-03",
+        "XD-OP-14"
+      ],
+      "skill": true
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-10-13",
+      "type": "FEATURE",
+      "title": "新增易支付协议兼容接入面（第 13 篇）",
+      "summary": "给已装易支付 / 彩虹支付类插件的商家新增协议兼容接入面：在商家后台「易支付接口配置」页开通后，把网关地址 / 商家 ID / 商户密钥填进插件即可，不用改代码。",
+      "integration": "NONE",
+      "action": "无需迁移；这是新增的可选接入面，不影响 /api/open/v1 的任何既有行为。",
+      "docIds": [
+        "XD-OP-13"
+      ],
+      "skill": true
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-10-12",
+      "type": "DOC",
+      "title": "接入资料可用性勘正（第二批）",
+      "summary": "门户页面名与按钮名对齐、查询端点补全 /api/open/v1 前缀、查单与重拉起口径对齐、Skill 包外引用说明、examples 交付形态说明等。",
+      "integration": "NONE",
+      "action": "无需迁移；本轮不涉及接口、字段或平台行为变化。",
+      "docIds": [
+        "XD-OP-01",
+        "XD-OP-02",
+        "XD-OP-03",
+        "XD-OP-08",
+        "XD-OP-13"
+      ],
+      "skill": true
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-10-12",
+      "type": "DOC",
+      "title": "接入资料勘正批",
+      "summary": "Skill 端点表与最小建单体统一为完整路径；域名归属验证明确为可选；区分请求级与业务级两层幂等重放；webhook 示例改为去重与业务同一事务提交。",
+      "integration": "RECOMMENDED",
+      "action": "无需迁移。若已按旧版 Skill 生成过代码，建议核对两处：端点路径前缀（/api/open/v1）与 webhook 落账的去重写法（去重行与业务同一事务）。",
+      "docIds": [
+        "XD-OP-02",
+        "XD-OP-03",
+        "XD-OP-05"
+      ],
+      "skill": true
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-10-12",
+      "type": "CHANGE",
+      "title": "webhook 首次投递提速至 10 秒级",
+      "summary": "平台 webhook 投递调度提速至 10 秒级；首次投递不等待退避间隔、由平台调度即时发出（秒级窗口，当前线上通常 10 秒内）。共投递 8 次、退避档位与超时上限均不变。",
+      "integration": "NONE",
+      "action": "无需迁移。若你的对接文档写过「首次即时＝即时送达」，建议按准确口径改写。",
+      "docIds": [
+        "XD-OP-05"
+      ],
+      "skill": true
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-10-04",
+      "type": "CHANGE",
+      "title": "应用配置变更改为提交即生效",
+      "summary": "提交时仍需短信二次验证，随后平台自动校验；校验通过即时生效并写回应用配置，不再人工审核。",
+      "integration": "NONE",
+      "action": "无需迁移；API 合同零改动。若上线检查表里写着「提交后等平台审核」，可以删掉这句。",
+      "docIds": [
+        "XD-OP-02",
+        "XD-OP-05"
+      ],
+      "skill": false
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-10-04",
+      "type": "DOC",
+      "title": "密钥标识 kid 格式与获取方式补全",
+      "summary": "kid 一直为 mkid_ + 16 位小写十六进制（共 21 字符），由平台在上传公钥时按公钥指纹派生并回显；新增本地派生公式。",
+      "integration": "NONE",
+      "action": "无需迁移，API 合同零改动。门户「应用凭证」页同时展示商户公钥 kid 与平台公钥 kid，签名请求头只填前者。",
+      "docIds": [
+        "XD-OP-12"
+      ],
+      "skill": true
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-10-02",
+      "type": "DOC",
+      "title": "对外费率与手续费改为公开写明",
+      "summary": "公开面（README 与 llms.txt）写明对外费率与固定手续费；docs 正文不重复列数字，入账仍以每单 feeProjection 为准。",
+      "integration": "NONE",
+      "action": "无需迁移；API 合同零改动。若对接文档写过「平台不公开费率」，改为「以公开面与商户后台费率说明页为准」。",
+      "docIds": [
+        "XD-OP-07"
+      ],
+      "skill": false
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-09-28",
+      "type": "FEATURE",
+      "title": "支付宝官方收款码下发与收银页终端分端能力",
+      "summary": "下单响应新增 qrCode 字段（仅支付宝渠道、仅下发响应有效）；收银页按终端分派：PC 渲染二维码，手机微信外给手势主按钮「打开支付宝」，手机微信内支付宝单给复制链接引导；微信支付在手机微信内免手点；手机微信外提供可执行的一键引导。",
+      "integration": "NONE",
+      "action": "无需迁移。qrCode 为可选新字段，旧解析逻辑不受影响；收银页行为变化只作用于买家侧体验，商家服务端无需改动。",
+      "docIds": [
+        "XD-OP-03",
+        "XD-OP-06"
+      ],
+      "skill": true
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-09-28",
+      "type": "CHANGE",
+      "title": "来源 IP 校验可自助开启/关闭",
+      "summary": "门户「IP 白名单」页新增自助开关，开启/关闭都需短信二次验证；关闭不动清单，开启前必须有条目。",
+      "integration": "NONE",
+      "action": "无需迁移，API 合同零改动。关闭后应用白名单腿的 403 OPEN_API_SOURCE_IP_REJECTED 不再出现；平台边缘腿不受影响。",
+      "docIds": [
+        "XD-OP-02",
+        "XD-OP-09"
+      ],
+      "skill": true
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-09-28",
+      "type": "CHANGE",
+      "title": "开通申请判据简化",
+      "summary": "一键申请的自动审核判据由 5 条降为 3 条（openapi-auto-review-v3）：信用与争议记录、申报域名归属验证不再作为判据，保留商家状态、协议签署与经营范围申报。",
+      "integration": "NONE",
+      "action": "无需迁移。若接入文档写着「必须先完成域名归属验证才能开通」「没有信用记录会被转人工」，请删除该前置描述。",
+      "docIds": [
+        "XD-OP-02"
+      ],
+      "skill": false
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-09-28",
+      "type": "DOC",
+      "title": "深度对齐复核批",
+      "summary": "修正回跳口径；补 CLOSED / FAILED 可被后续 PAYMENT_SUCCEEDED 提升；清理 stateVersion 乱序指引；补齐 GET 签名空行、请求字段约束、业务摘要成员、400/422 分界与事件体语义。",
+      "integration": "RECOMMENDED",
+      "action": "无需迁移。若按旧文把 CLOSED / FAILED 建成吸收态，或按 stateVersion 判新旧，需要修正；否则会丢掉已到账事件或在自测里全绿。",
+      "docIds": [
+        "XD-OP-02",
+        "XD-OP-03",
+        "XD-OP-04",
+        "XD-OP-05",
+        "XD-OP-06",
+        "XD-OP-07",
+        "XD-OP-09",
+        "XD-OP-11"
+      ],
+      "skill": true
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-09-27",
+      "type": "CHANGE",
+      "title": "不再要求 SVIP 资格",
+      "summary": "开放平台整条线不再以会员等级（SVIP）为判据：应用一键申请不再因非 SVIP 转人工；新增下单与重拉起不再要求 SVIP，对应 403 拒绝码已从错误码总表移除。",
+      "integration": "NONE",
+      "action": "无需迁移。若代码里有 SVIP 资格分支，可以删掉；保留也不会再被触发。",
+      "docIds": [
+        "XD-OP-02"
+      ],
+      "skill": false
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-09-27",
+      "type": "DOC",
+      "title": "文档修订：对齐线上实际行为",
+      "summary": "补齐关单/重拉起请求头约束、六头长度与字符集、响应验签归一化与不带四头的场景、notifyUrl 前置、回跳语义、乱序判据、限额与域名验证口径等。",
+      "integration": "NONE",
+      "action": "无需迁移。接口侧唯一修正是空请求体按无请求体处理（变宽松），对已按文档接入的商家无破坏。",
+      "docIds": [
+        "XD-OP-02",
+        "XD-OP-03",
+        "XD-OP-04",
+        "XD-OP-05",
+        "XD-OP-06",
+        "XD-OP-09",
+        "XD-OP-11",
+        "XD-OP-12"
+      ],
+      "skill": true
+    }
+  ]
+}

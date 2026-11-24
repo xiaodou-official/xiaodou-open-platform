@@ -37,6 +37,7 @@
 | `OPEN_API_CLOSE_NOT_COMPLETED` | 409 | 关单未完成：支付机构未完成本次关单，**订单仍可能处于可支付状态**（平台不会把订单本地判死）。稍后重试关单，或等订单到期自动关闭（到期后不可支付）。**可重试**，但不要紧循环。 |
 | `OPEN_API_CHANNEL_UNAVAILABLE` | 422 | 通道存在但链路未放行（闸门关闭或前置未齐）。**可预期的正常拒绝**，不要重试刷量。 |
 | `OPEN_API_MERCHANT_CHANNEL_UNAVAILABLE` | 409 | 商户单所选支付方式对当前商家暂不可用（商户能力/渠道子状态/平台开关）。**可换支付方式重试**；不代表平台整体停服。 |
+| `OPEN_API_SETTLEMENT_NOT_READY` | 422 | 旧渠道收款账户尚未完成结算绑卡：**新增下单/重拉起**被拒；存量订单查询、关单、退款与结算读回**不受影响**。请联系平台完成收款账户开通后重试，不要重复提交同一笔。 |
 | `OPEN_API_MERCHANT_SUB_OPENID_INVALID` | 422 | 商户微信单 `subOpenid` 形态非法，或支付宝单/平台单携带了 `subOpenid/subAppid`。不传 `subOpenid` 不是错误（＝平台桥接页）；按文末请求字段约束传参。 |
 | `OPEN_API_MERCHANT_APPID_UNAVAILABLE` | 403 | 平台微信配置尚未读回生效：微信支付暂不可用。等待门户显示「已开通」，或联系对接人核对平台配置。 |
 | `OPEN_API_MERCHANT_APPID_INVALID` | 422 | `subAppid` 形态非法、使用了未经平台统一配置证明的平台 appid，或与商户已绑定 appid 不一致。 |
@@ -114,6 +115,7 @@
     "OPEN_API_RESOURCE_NOT_FOUND": 404,
     "OPEN_API_CHANNEL_UNAVAILABLE": 422,
     "OPEN_API_MERCHANT_CHANNEL_UNAVAILABLE": 409,
+    "OPEN_API_SETTLEMENT_NOT_READY": 422,
     "OPEN_API_MERCHANT_SUB_OPENID_INVALID": 422,
     "OPEN_API_MERCHANT_APPID_UNAVAILABLE": 403,
     "OPEN_API_MERCHANT_APPID_INVALID": 422,

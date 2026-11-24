@@ -23,6 +23,7 @@
 | `OPEN_API_CLOSE_NOT_COMPLETED` | 409 | 关单未完成：通道未完成本次关单，订单仍可能可支付；稍后重试关单或等到期自动关闭，不要紧循环 |
 | `OPEN_API_CHANNEL_UNAVAILABLE` | 422 | 通道链路未放行：**正常拒绝**，不要重试刷量 |
 | `OPEN_API_MERCHANT_CHANNEL_UNAVAILABLE` | 409 | 商户单所选支付方式对该商家暂不可用：**可换支付方式重试**，平台未整体停服 |
+| `OPEN_API_SETTLEMENT_NOT_READY` | 422 | 旧渠道收款账户未完成结算绑卡：联系平台完成开通后重试；存量查询/关单/退款不受影响 |
 | `OPEN_API_MERCHANT_DEPOSIT_BLOCKED` | 409 | 商户保证金未缴清（宽限期已过）：补缴后自动恢复；不要重复提交同一笔 |
 | `OPEN_API_MERCHANT_COMPLAINT_HOLD` | 409 | 商户存在未结案投诉的经营限制：联系平台处理；不要重复提交同一笔 |
 | `OPEN_API_MERCHANT_SUB_OPENID_INVALID` | 422 | 商户微信单 `subOpenid` 形态非法，或支付宝单/平台单携带 `subOpenid/subAppid`；不传 `subOpenid` 是平台桥接形态，不是错误 |
