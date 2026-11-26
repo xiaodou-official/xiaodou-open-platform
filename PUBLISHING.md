@@ -28,6 +28,14 @@
 5. 差异清单（公开版 vs 登录后视图）由第 1 节第 5 项的签收人过目。
 6. **推送后**才回填 `MANIFEST.json` 的 `releases[0].publishedAt` 与 `channels.publicRelease.status`，并重算 hash：`bash scripts/open_platform_docs_gate.sh --write`。
    - 这两项在真正推送之前保持空值与「待投递」：把「已发布」写在未发布的状态上，是这份资料里最不该出现的一类错误。
+   - **`status=DELIVERED` 必须带远端读回证据**（2026-11-26 起由门禁强制）：推完两腿后执行
+     `node scripts/check_open_platform_public_remote_sync.js --verify`，它会读 GitHub 与 Gitee
+     两条通道 `main` 的 `contentHash` 并与本地比对，一致才写入
+     `channels.publicRelease.verifiedContentHash` / `verifiedAt` / `verifiedRemotes`。
+   - 证据与 `contentHash` 绑定：**内容一变，旧证据立即失效**，门禁当场判红，必须重推两腿并重跑 `--verify`。
+     因此「漏推却标 DELIVERED」在离线门禁就会暴露，不必等下次人工读回。
+   - 该纪律来自一次真实事故：2026-11-25 的文档 2.9.4 批标了 `DELIVERED`，但公开仓从未收到推送，
+     直到次日才发现滞后两个批次。
 7. 三方版本一致读回：发布 tag ↔ `MANIFEST.json` 的 `skillVersion` ↔ 门户下载包 `contentHash`。
 
 ## 4. 机器可读块（发布判据；改状态必须同批改说明）
