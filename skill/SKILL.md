@@ -29,6 +29,7 @@ description: 小豆支付开放平台商家接入 Skill。用于帮助商家开�
 - 签名：MD5（剔除 `sign`/`sign_type`/空值 → ASCII 排序 → `k=v&…` → 直接接密钥 → 小写 hex）。
 - 明确不做：`act=orders` 批量、`act=change`、`qrcode.php`、JSON body 建单。
 - 实测客户端：独角数卡（GET submit）、V2Board（GET submit）、[Sub2API](https://github.com/Wei-Shaw/sub2api)（POST mapi / POST api，参数镜像 query+body）、[New API](https://github.com/QuantumNous/new-api)（go-epay v0.0.5，POST submit 表单、`device=pc`，`notify_url`/`return_url` 必须是 https 完整地址）。
+- **网关字段分两类**：独角数卡 / 「添加账号」式表单填完整表单地址（含 `/submit.php`）；New API / V2Board 等会自动补 `/submit.php` 的面板只填基址（即网关地址去掉 `/submit.php`，无尾斜杠）。New API 的 `ServerAddress` 填成完整 `/submit.php` 会请求 `/submit.php/submit.php` 并 404。
 - 人读版：`docs/13-epay-compat-integration.md`（**不在 Skill 包内**，按本文「路径基准」另取）。
 
 ## 铁律（先记这七条，能避免绝大多数事故）

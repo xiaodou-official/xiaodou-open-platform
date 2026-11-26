@@ -44,7 +44,7 @@ Base URL 由平台下发（文档里写 `<BASE_URL>`；它是**纯 host、不含
 ## 4. 通道与申报
 
 - `channel`：下单时冻结，不可改。
-- `tradeScope`：双申报应用必填，单申报可省（取该申报形态）；不符 → `422 OPEN_API_SCOPE_CHANNEL_MISMATCH`。
+- `tradeScope`：`PHYSICAL_FACE_TO_FACE` / `CARD_VIRTUAL`。**双申报应用必填**（漏传＝首位成因），单申报可省（取该申报形态）；取值合法但不在应用申报内 → `422 OPEN_API_SCOPE_CHANNEL_MISMATCH`。它描述「卖什么」，与 `channel`（怎么收钱）正交——换通道不能绕过；下单冻结且进业务摘要（改动即 `409`）。**最省事：固定传**（单申报传自己那一种、双申报按本单实际形态传），此后申报范围怎么变都不再触发本码——门户没有「当前生效经营范围」展示页，别让代码去猜。改申报范围走门户「应用配置变更」，提交即生效。取值形态非法（不在枚举）是 `400 OPEN_API_BODY_INVALID`，不是 `422`。具体成因读错误响应 `message`：漏传与越界文案不同。
 - 通道链路未放行 → `422 OPEN_API_CHANNEL_UNAVAILABLE`：这是**正常拒绝**，不要重试刷量。
 
 ## 5. 交付边界（常被写错）
@@ -135,6 +135,6 @@ Content-Type: application/json
 | 独角数卡 dujiaoka | GET `submit.php` | 一般不用 | 发卡站最常见 |
 | V2Board | GET `submit.php` | 一般不用 | 不传 `type`，按默认支付方式 |
 | [Sub2API](https://github.com/Wei-Shaw/sub2api) | POST `mapi.php` | POST `api.php`，参数同时放 query 与表单体 | 同值镜像放行 |
-| [New API](https://github.com/QuantumNous/new-api)（go-epay v0.0.5） | POST `submit.php` 表单（`device=pc`） | 不主动查单 | `ServerAddress` 必须 https；通知/回跳支持 GET |
+| [New API](https://github.com/QuantumNous/new-api)（go-epay v0.0.5） | POST `submit.php` 表单（`device=pc`） | 不主动查单 | `ServerAddress` 只填 https 基址（不要带 `/submit.php`，go-epay 会自动拼接；完整地址会双段 404）；通知/回跳支持 GET |
 
 > 客户端只需填网关地址、商家 ID、商户密钥，不改代码。人读版见 `docs/13-epay-compat-integration.md`（不在 Skill 包内，需从门户或公开仓另取）。真实首单仍需按上线清单自测。

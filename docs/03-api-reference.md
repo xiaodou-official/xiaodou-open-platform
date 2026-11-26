@@ -45,7 +45,7 @@
 | --- | --- |
 | 成功 | `201`（新建）/ `200`（同 `outTradeNo` 同业务摘要 → 幂等重放，含 `replayed=true`） |
 | 失败 | `400` `401` `403` `409` `422` `429` `502` `503` |
-| 请求体 | `outTradeNo`、`channel`、`currency`、`subject`、**`payerClientIp`** 必填；`amountFen`（SELLER，缺省）或 `merchantAmountFen`（BUYER）二选一必填；`feeBearer`、`tradeScope`、`description`、`attach`、`returnUrl`、`timeExpireSeconds` 可选；**新渠道商户微信单**可选 `subOpenid`（携带＝自管拉起；不携带＝平台桥接页）与 `subAppid`；商户单与**平台单支付宝**可选买家标识 `buyerId`/`buyerPhone`（仅摘要落库；平台单微信禁止） |
+| 请求体 | `outTradeNo`、`channel`、`currency`、`subject`、**`payerClientIp`** 必填；`amountFen`（SELLER，缺省）或 `merchantAmountFen`（BUYER）二选一必填；`feeBearer`、**`tradeScope`（应用申报了两种经营形态时必填，见 §2.9）**、`description`、`attach`、`returnUrl`、`timeExpireSeconds` 可选；**新渠道商户微信单**可选 `subOpenid`（携带＝自管拉起；不携带＝平台桥接页）与 `subAppid`；商户单与**平台单支付宝**可选买家标识 `buyerId`/`buyerPhone`（仅摘要落库；平台单微信禁止） |
 
 要点：
 
@@ -158,13 +158,14 @@
 
 ### 2.9 请求字段约束（创建订单 / 创建退款）
 
-下表是**逐字硬约束**（不是建议）：任何一条不满足返回 `400 OPEN_API_BODY_INVALID`——**不是** `422`。`422` 只用于通道、申报形态与平台限额（见 [费率与限额](./07-fees-and-limits.md)）。
+下表是**逐字硬约束**（不是建议）：任何一条不满足返回 `400 OPEN_API_BODY_INVALID`——**不是** `422`。**唯一例外是 `tradeScope`**：它的取值形态非法（不在枚举内）仍是 `400`，但「取值合法却与应用申报的经营范围对不上」是 `422 OPEN_API_SCOPE_CHANNEL_MISMATCH`（见该行）。`422` 其余只用于通道链路与平台限额（见 [费率与限额](./07-fees-and-limits.md)）。
 
 | 字段 | 约束 |
 | --- | --- |
 | `outTradeNo` / `outRefundNo` | **6–64 位**，字符集仅 `A-Z a-z 0-9 _ -`（**不能含点号**、空格、中文或其他符号）；同一笔重试必须逐字复用 |
 | `amountFen` | **SELLER 模式必填**（缺省承担方），表示买家实付；整数分，最小 `1`（¥0.01）；**上限按本单实际到账账号的主体类型判定**（对公主体不设平台业务金额上限、实际以支付服务方额度为准；个人主体按平台默认档，另有单独约定时以约定为准），见 [费率与限额](./07-fees-and-limits.md)；更小的值、小数点、字符串、超出上限都会被拒（`400 OPEN_API_BODY_INVALID`，`details.field=amountFen`）。**BUYER 模式禁止出现** |
 | `feeBearer` | `SELLER` / `BUYER`（大小写敏感、不 trim）；缺省 `SELLER`。BUYER 为灰度能力（2026-10-20 起已开通）：平台回滚或闸门关闭时返回 `422 OPEN_API_FEE_BEARER_DISABLED`；只影响新单，查单/退款/历史订单不受影响 |
+| `tradeScope` | `PHYSICAL_FACE_TO_FACE`（实物当面交易）/ `CARD_VIRTUAL`（卡密虚拟物品交易），大小写敏感、不 trim。**应用申报了一种形态时可省（省即取该形态）；申报了两种时必填**——漏传返回 `422 OPEN_API_SCOPE_CHANNEL_MISMATCH`，传了未申报的值同样。它描述「卖什么」，与 `channel`（怎么收钱）是两个维度，换通道不能绕过。下单冻结、进业务摘要（改动即 `409`）。**建议固定传**：单申报传自己那一种、双申报按本单实际形态传，此后申报范围怎么变都不会再触发本码（门户当前没有「当前生效经营范围」的独立展示页）。要改申报范围本身走「应用配置变更」，提交即生效、不影响已建订单 |
 | `merchantAmountFen` | **BUYER 模式必填**，商户定价/净额（整数分，最小 `1`）；服务端按买家实付反算并返回 `amountFen`。**SELLER 模式禁止出现** |
 | `currency` | 固定 `CNY`（**大小写敏感**，`cny`/`RMB` 都会被拒） |
 | `subject` | 必填，≤ **128** 字符 |

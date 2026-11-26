@@ -1,7 +1,35 @@
 {
   "schema": "xd-open-platform-release-notes/v1",
-  "updatedAt": "2026-11-24",
+  "updatedAt": "2026-11-26",
   "entries": [
+    {
+      "version": "2.9.5",
+      "date": "2026-11-26",
+      "type": "CORRECTION",
+      "title": "写清 422 OPEN_API_SCOPE_CHANNEL_MISMATCH 的自查与处置",
+      "summary": "这一码此前只写「申报交易形态与通道绑定不符」，商户无法据此判断该改什么。现写明三种成因与处置：首位成因是应用申报了两种经营形态却没传 tradeScope（补传 PHYSICAL_FACE_TO_FACE 或 CARD_VIRTUAL 即可，与平台无关、无需等待）；其次是传了未申报的形态（改值，或到「应用配置变更」补申报，提交即生效、不影响已建订单）；空申报属平台侧装配缺陷。同时点明它判的是「卖什么」而非「怎么收钱」——换 channel 重试同样被拒，并区分它与 422 OPEN_API_CHANNEL_UNAVAILABLE 的归属。",
+      "integration": "NONE",
+      "action": "无需改代码。最省事的做法是下单固定带 tradeScope（单申报传自己那一种、双申报按本单实际形态传），此后申报范围怎么变都不再触发本码；具体成因读错误响应 message（漏传与越界文案不同）。接口路径、字段、枚举与判定逻辑均未变更，本批只改文档表述。",
+      "docIds": [
+        "XD-OP-02",
+        "XD-OP-03",
+        "XD-OP-04"
+      ],
+      "skill": true
+    },
+    {
+      "version": "2.9.4",
+      "date": "2026-11-25",
+      "type": "CORRECTION",
+      "title": "修正易支付网关字段的填写指引",
+      "summary": "按面板类型区分网关字段：独角数卡 /「添加账号」式表单填完整表单地址（含 /submit.php）；New API、V2Board 等会自动补 /submit.php 的面板只填基址。New API 的 ServerAddress 填成完整地址会请求 /submit.php/submit.php 并 404。",
+      "integration": "NONE",
+      "action": "已按旧指引填写完整地址的 New API 用户，请把 ServerAddress 改为去掉 /submit.php 的基址；PID 与商户密钥不变，无需重新开通或重新签发密钥。",
+      "docIds": [
+        "XD-OP-13"
+      ],
+      "skill": true
+    },
     {
       "version": "2.9.3",
       "date": "2026-11-24",

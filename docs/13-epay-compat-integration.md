@@ -102,9 +102,9 @@
 | **独角数卡 dujiaoka** | GET `submit.php` | 一般不用 | 发卡站最常见；V1 签名 |
 | **V2Board 面板** | GET `submit.php` | 一般不用 | 不传 `type`，按默认支付方式 |
 | **Sub2API**（[Wei-Shaw/sub2api](https://github.com/Wei-Shaw/sub2api)） | POST `mapi.php` | **POST `api.php`**（参数同时放查询串与表单体） | 2026-10-22 源码核对；同值镜像放行，不会当重复参数拒绝 |
-| **New API**（[QuantumNous/new-api](https://github.com/QuantumNous/new-api)，go-epay v0.0.5） | **POST `submit.php`** 表单（带 `device=pc`） | 不主动查单 | 2026-10-22 源码核对；通知/回跳均支持 GET；`ServerAddress` 必须是 https 公网地址（用它拼 `notify_url` / `return_url`） |
+| **New API**（[QuantumNous/new-api](https://github.com/QuantumNous/new-api)，go-epay v0.0.5） | **POST `submit.php`** 表单（带 `device=pc`） | 不主动查单 | 2026-10-22 源码核对；通知/回跳均支持 GET；`ServerAddress` 只填 https 基址（即页面网关地址去掉 `/submit.php`；**不要填到 `/submit.php`**，go-epay 会自动拼接；填完整地址会请求 `/submit.php/submit.php` 并 404）；`notify_url`/`return_url` 必须是 https 完整地址 |
 
-上面这些系统都**不用改代码**：把网关地址、商家 ID、商户密钥填进它们原有的易支付配置即可。New API 的 `notify_url`/`return_url` 必须是 **https 完整地址**；Sub2API 的查单参数会同时出现在 query 与表单体，平台按同值放行。以上为源码/协议核对结论，真实首单仍请按第 5 节自测。
+上面这些系统都**不用改代码**：把网关地址、商家 ID、商户密钥填进它们原有的易支付配置即可。**网关这一格分两类**：独角数卡 / 「添加账号」式表单填完整表单地址（含 `/submit.php`）；New API、V2Board 等会自动补 `/submit.php` 的面板只填基址（即页面网关地址去掉 `/submit.php`，无尾斜杠）。New API 的 `notify_url`/`return_url` 必须是 **https 完整地址**；Sub2API 的查单参数会同时出现在 query 与表单体，平台按同值放行。以上为源码/协议核对结论，真实首单仍请按第 5 节自测。
 
 ### 2.7 失败时你会看到什么
 

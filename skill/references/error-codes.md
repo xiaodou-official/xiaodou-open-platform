@@ -36,7 +36,7 @@
 | `OPEN_API_TEST_MODE_NOT_ALLOWED` | 422 | 生产应用不允许 `test=true`：测试单只能由沙箱应用或平台受控标注写入 |
 | `OPEN_API_SANDBOX_UNAVAILABLE` | 422 | 沙箱环境未开启：沙箱应用暂不可下单 |
 | `OPEN_API_SANDBOX_APP_REQUIRED` | 422 | 当前应用不是沙箱应用：模拟支付/退款端点只对沙箱应用开放 |
-| `OPEN_API_SCOPE_CHANNEL_MISMATCH` | 422 | 申报交易形态与通道绑定不符 |
+| `OPEN_API_SCOPE_CHANNEL_MISMATCH` | 422 | 下单 `tradeScope` 与应用申报经营范围对不上。**首位成因＝双申报应用漏传 `tradeScope`**（补传 `PHYSICAL_FACE_TO_FACE` 或 `CARD_VIRTUAL`）；其次＝传了未申报的形态（改值，或「应用配置变更」补申报，提交即生效）；空申报属平台侧缺陷（带 `requestId` 反馈）。**与通道无关**：换 `channel` 重试同样被拒 |
 | `OPEN_API_FEE_BEARER_DISABLED` | 422 | 买家承担服务费未开放（灰度/回滚闸门关闭）：只挡新 BUYER 单，查单/退款/历史订单不受影响 |
 | `OPEN_API_LIMIT_EXCEEDED` | 422 | 限额越界：信封带**触发面**——订单/尝试腿=`details.scopes`（数组）；**退款累计腿**=`details.scope` 单值 `REFUND_CUMULATIVE` + `outRefundNo`。先关掉在途未支付订单；限额无自助查询面，需调整走官网反馈渠道（附 `requestId`） |
 | `OPEN_API_RATE_LIMITED` | 429 | 频率限流：指数退避 + 复用 `requestId`；额度窗口见响应头 `RateLimit-*` / `Retry-After` |
@@ -51,6 +51,7 @@
 | --- | --- | --- |
 | 403 | 「签名不对」 | 签名错是 401；403 一律是**来源或应用/商家状态** |
 | 422 | 「系统故障，重试」 | 未放行通道/申报不符/限额——重试不会变成功 |
+| `422 SCOPE_CHANNEL_MISMATCH` | 「通道不对，换个 `channel` 重试」 | 判的是「卖什么」（`tradeScope`）不是「怎么收钱」；双申报应用漏传就补传，换通道照样被拒 |
 | 409 | 「换个单号重发」 | **先查单**；换号会造成两笔真实订单 |
 | 503 | 「换个路径绕过」 | 503 是安全地拒绝；退避重试即可 |
 | 404 | 「资源真的不存在」 | 查单对跨应用/跨商家统一中性 404，防枚举 |
